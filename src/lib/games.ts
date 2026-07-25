@@ -35,6 +35,12 @@ export type Game = {
   tags: string[];
   acquired: string;
   note: string;
+  /**
+   * Whether `note` is the owner's own words rather than a generated stand-in
+   * ("never launched", "last played jun 2024"). The detail view sets its own
+   * text as a quotation, which would be a small lie about a generated line.
+   */
+  noteIsOwn?: boolean;
   /** Session dates for the library card, oldest first. */
   stamps?: string[];
   /** Cover served from our own origin. Null falls back to generated art. */

@@ -54,35 +54,39 @@ export function PublicProfilePanel({
   }
 
   return (
-    <div className="rounded-xl border border-white/12 bg-white/[0.03] p-6 text-sm leading-relaxed text-[#a8a69f]">
-      <p className="mb-1">
-        Signed in as <span className="text-[#e9e7e0]">SteamID {steamId}</span>.
+    <div className="panel p-8">
+      <p className="drawer-label mb-5">public record found</p>
+
+      <p className="font-display text-[2.5rem] leading-none text-paper">
+        {gameCount}
+        <span className="ml-2.5 font-sans text-base text-paper-faint">
+          games readable
+        </span>
       </p>
-      <p className="mb-4">
-        Your profile is public — found{" "}
-        <span className="text-[#e9e7e0]">{gameCount} games</span>. No API key
-        needed.
+
+      <p className="catalog mt-4 leading-[1.9] text-paper-faint">
+        steamid {steamId} · no api key needed
       </p>
 
       {state.kind === "error" && (
-        <p className="mb-3 text-xs text-[#e8877b]">{state.message}</p>
+        <p className="catalog mt-5 leading-[1.9] text-rust">{state.message}</p>
       )}
 
       <button
         onClick={connect}
         disabled={state.kind === "saving"}
-        className="rounded-lg border border-white/25 px-4 py-2 text-[13px] text-[#e9e7e0] transition hover:border-white/45 hover:bg-white/5 disabled:opacity-40"
+        className="btn btn-primary mt-8"
       >
         {state.kind === "saving" ? "connecting…" : "connect →"}
       </button>
 
-      <p className="mt-4 text-xs">
-        This public feed doesn&apos;t carry exact last-played dates.{" "}
+      <p className="catalog mt-8 leading-[1.9] text-paper-ghost">
+        this feed carries no exact last-played dates.{" "}
         <button
           onClick={() => setUseKeyInstead(true)}
-          className="text-[#7fb6df] hover:underline"
+          className="text-amber underline decoration-[var(--amber-deep)] underline-offset-4 hover:decoration-[var(--amber)]"
         >
-          Use an API key instead
+          file an api key instead
         </button>{" "}
         for full data.
       </p>

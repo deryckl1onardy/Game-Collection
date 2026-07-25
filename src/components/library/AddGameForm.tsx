@@ -70,92 +70,104 @@ export function AddGameForm() {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-[#c9c7c0] transition hover:border-white/40 hover:bg-white/5"
-      >
-        + add game
+      <button onClick={() => setOpen(true)} className="btn">
+        add
       </button>
     );
   }
 
   return (
-    <div className="absolute right-0 top-full z-10 mt-2 w-72 rounded-xl border border-white/15 bg-[#16171a]/95 p-4 text-sm shadow-xl backdrop-blur">
-      <form onSubmit={submit}>
-        <label className="mb-1 block text-xs text-[#8e8d86]">title</label>
-        <input
-          autoFocus
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Tunic"
-          className="mb-3 w-full rounded-md border border-white/15 bg-black/30 px-2 py-1.5 text-xs text-[#e9e7e0] outline-none placeholder:text-[#4e4d49] focus:border-white/35"
-        />
+    <div className="panel panel-float rise absolute right-0 top-full z-20 mt-3 w-80 p-6 text-left backdrop-blur-md">
+      {/* An accession slip: the form a librarian fills to enter a new item. */}
+      <p className="drawer-label mb-5">accession slip</p>
 
-        <label className="mb-1 block text-xs text-[#8e8d86]">platform</label>
-        <select
-          value={platform}
-          onChange={(e) => setPlatform(e.target.value as Exclude<Platform, "Steam">)}
-          className="mb-3 w-full rounded-md border border-white/15 bg-black/30 px-2 py-1.5 text-xs text-[#e9e7e0] outline-none focus:border-white/35"
-        >
-          {MANUAL_PLATFORMS.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <label className="field-label">title</label>
+          <input
+            autoFocus
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Tunic"
+            className="field font-display text-base"
+          />
+        </div>
 
-        <label className="mb-1 block text-xs text-[#8e8d86]">playtime (hours)</label>
-        <input
-          type="number"
-          min={0}
-          step={0.1}
-          value={playtime}
-          onChange={(e) => setPlaytime(e.target.value)}
-          placeholder="0"
-          className="mb-3 w-full rounded-md border border-white/15 bg-black/30 px-2 py-1.5 text-xs text-[#e9e7e0] outline-none placeholder:text-[#4e4d49] focus:border-white/35"
-        />
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label className="field-label">origin</label>
+            <select
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value as Exclude<Platform, "Steam">)}
+              className="field"
+            >
+              {MANUAL_PLATFORMS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-24">
+            <label className="field-label">hours</label>
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              value={playtime}
+              onChange={(e) => setPlaytime(e.target.value)}
+              placeholder="0"
+              className="field font-mono"
+            />
+          </div>
+        </div>
 
-        <label className="mb-3 flex items-center gap-2 text-[#e9e7e0]">
+        <div>
+          <label className="field-label">tags</label>
+          <input
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="comfort game, someday"
+            className="field"
+          />
+        </div>
+
+        <div>
+          <label className="field-label">note</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            className="field"
+          />
+        </div>
+
+        <label className="catalog flex cursor-pointer items-center gap-2.5 pt-1 text-paper-dim">
           <input
             type="checkbox"
             checked={finished}
             onChange={(e) => setFinished(e.target.checked)}
+            className="h-3 w-3 accent-[var(--amber)]"
           />
           finished
         </label>
 
-        <label className="mb-1 block text-xs text-[#8e8d86]">tags (comma separated)</label>
-        <input
-          value={tagsInput}
-          onChange={(e) => setTagsInput(e.target.value)}
-          placeholder="comfort game, someday"
-          className="mb-3 w-full rounded-md border border-white/15 bg-black/30 px-2 py-1.5 text-xs text-[#e9e7e0] outline-none placeholder:text-[#4e4d49] focus:border-white/35"
-        />
-
-        <label className="mb-1 block text-xs text-[#8e8d86]">note</label>
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          className="mb-3 w-full resize-none rounded-md border border-white/15 bg-black/30 px-2 py-1.5 text-xs text-[#e9e7e0] outline-none focus:border-white/35"
-        />
-
         {state.kind === "error" && (
-          <p className="mb-2 text-xs text-[#e8877b]">{state.message}</p>
+          <p className="catalog leading-relaxed text-rust">{state.message}</p>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-4 pt-1">
           <button
             type="submit"
             disabled={state.kind === "saving" || !title.trim()}
-            className="rounded-lg border border-white/25 px-3 py-1.5 text-xs text-[#e9e7e0] transition hover:border-white/45 hover:bg-white/5 disabled:opacity-40"
+            className="btn btn-primary"
           >
-            {state.kind === "saving" ? "adding…" : "add"}
+            {state.kind === "saving" ? "filing…" : "file it"}
           </button>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="rounded-lg px-3 py-1.5 text-xs text-[#75746e] transition hover:text-[#c9c7c0]"
+            className="catalog text-paper-ghost transition-colors hover:text-paper-dim"
           >
             cancel
           </button>

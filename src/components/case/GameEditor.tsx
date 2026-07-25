@@ -62,76 +62,84 @@ export function GameEditor({ game }: { game: Game }) {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="pointer-events-auto rounded-lg border border-white/25 px-4 py-2 text-[13px] transition hover:border-white/45 hover:bg-white/5"
-      >
-        edit
+      <button onClick={() => setOpen(true)} className="btn pointer-events-auto">
+        annotate
       </button>
     );
   }
 
   return (
-    <div className="pointer-events-auto w-72 rounded-xl border border-white/15 bg-[#16171a]/95 p-4 text-sm shadow-xl backdrop-blur">
-      <label className="mb-3 flex items-center gap-2 text-[#e9e7e0]">
-        <input
-          type="checkbox"
-          checked={finished}
-          onChange={(e) => setFinished(e.target.checked)}
-        />
-        finished
-      </label>
+    <div className="panel panel-float rise pointer-events-auto w-80 p-6 text-left backdrop-blur-md">
+      <p className="drawer-label mb-5">annotations</p>
 
-      <label className="mb-1 block text-xs text-[#8e8d86]">tags (comma separated)</label>
-      <input
-        value={tagsInput}
-        onChange={(e) => setTagsInput(e.target.value)}
-        placeholder="comfort game, someday"
-        className="mb-3 w-full rounded-md border border-white/15 bg-black/30 px-2 py-1.5 text-xs text-[#e9e7e0] outline-none placeholder:text-[#4e4d49] focus:border-white/35"
-      />
-
-      <label className="mb-1 block text-xs text-[#8e8d86]">note</label>
-      <textarea
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        rows={2}
-        className="mb-3 w-full resize-none rounded-md border border-white/15 bg-black/30 px-2 py-1.5 text-xs text-[#e9e7e0] outline-none focus:border-white/35"
-      />
-
-      {game.source === "manual" && (
-        <>
-          <label className="mb-1 block text-xs text-[#8e8d86]">
-            playtime (hours) — {game.platform} isn&apos;t synced
-          </label>
+      <div className="space-y-4">
+        <div>
+          <label className="field-label">tags</label>
           <input
-            type="number"
-            min={0}
-            step={0.1}
-            value={manualPlaytime}
-            onChange={(e) => setManualPlaytime(e.target.value)}
-            className="mb-3 w-full rounded-md border border-white/15 bg-black/30 px-2 py-1.5 text-xs text-[#e9e7e0] outline-none focus:border-white/35"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="comfort game, someday"
+            className="field"
           />
-        </>
-      )}
+        </div>
 
-      {state.kind === "error" && (
-        <p className="mb-2 text-xs text-[#e8877b]">{state.message}</p>
-      )}
+        <div>
+          <label className="field-label">note</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            className="field"
+          />
+        </div>
 
-      <div className="flex gap-2">
-        <button
-          onClick={save}
-          disabled={state.kind === "saving"}
-          className="rounded-lg border border-white/25 px-3 py-1.5 text-xs text-[#e9e7e0] transition hover:border-white/45 hover:bg-white/5 disabled:opacity-40"
-        >
-          {state.kind === "saving" ? "saving…" : "save"}
-        </button>
-        <button
-          onClick={() => setOpen(false)}
-          className="rounded-lg px-3 py-1.5 text-xs text-[#75746e] transition hover:text-[#c9c7c0]"
-        >
-          cancel
-        </button>
+        {game.source === "manual" && (
+          <div>
+            {/* Template literal, not JSX text: an `&apos;` entity sitting
+                next to an expression loses the space between them. */}
+            <label className="field-label">
+              {`hours · ${game.platform} isn't synced`}
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              value={manualPlaytime}
+              onChange={(e) => setManualPlaytime(e.target.value)}
+              className="field font-mono"
+            />
+          </div>
+        )}
+
+        <label className="catalog flex cursor-pointer items-center gap-2.5 pt-1 text-paper-dim">
+          <input
+            type="checkbox"
+            checked={finished}
+            onChange={(e) => setFinished(e.target.checked)}
+            className="h-3 w-3 accent-[var(--amber)]"
+          />
+          finished
+        </label>
+
+        {state.kind === "error" && (
+          <p className="catalog leading-relaxed text-rust">{state.message}</p>
+        )}
+
+        <div className="flex items-center gap-4 pt-1">
+          <button
+            onClick={save}
+            disabled={state.kind === "saving"}
+            className="btn btn-primary"
+          >
+            {state.kind === "saving" ? "saving…" : "save"}
+          </button>
+          <button
+            onClick={() => setOpen(false)}
+            className="catalog text-paper-ghost transition-colors hover:text-paper-dim"
+          >
+            cancel
+          </button>
+        </div>
       </div>
     </div>
   );

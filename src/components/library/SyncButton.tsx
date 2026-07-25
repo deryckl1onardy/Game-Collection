@@ -49,19 +49,15 @@ export function SyncButton() {
   }
 
   return (
-    <span className="inline-flex items-center gap-2">
-      <button
-        onClick={sync}
-        disabled={state.kind === "running"}
-        className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-[#c9c7c0] transition hover:border-white/40 hover:bg-white/5 disabled:opacity-40"
-      >
-        {state.kind === "running" ? "syncing…" : "sync now"}
+    <span className="inline-flex items-center gap-3">
+      <button onClick={sync} disabled={state.kind === "running"} className="btn">
+        {state.kind === "running" ? "syncing…" : "sync"}
       </button>
       {state.kind === "done" && (
-        <span className="text-xs text-[#82c497]">{state.message}</span>
+        <span className="catalog text-verdigris">{state.message}</span>
       )}
       {state.kind === "error" && (
-        <span className="text-xs text-[#e8877b]">{state.message}</span>
+        <span className="catalog text-rust">{state.message}</span>
       )}
     </span>
   );

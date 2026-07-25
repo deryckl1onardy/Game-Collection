@@ -23,7 +23,9 @@ export function CaseStage(props: GameCaseProps) {
       // @use-gesture warns about it explicitly.
       style={{ touchAction: "none" }}
     >
-      <color attach="background" args={["#101113"]} />
+      {/* Must track --ink in globals.css, or the WebGL surface reads as a
+          slightly different, cooler black than the page around it. */}
+      <color attach="background" args={["#100e0b"]} />
 
       {/* Locally generated + PMREM-processed, so clearcoat is reliable and
           nothing is fetched from an external origin at runtime. */}

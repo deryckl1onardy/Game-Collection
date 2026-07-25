@@ -1,21 +1,24 @@
 import Link from "next/link";
 
 import { CaseCover } from "@/components/library/CaseCover";
-import { Cover } from "@/components/library/Cover";
 import type { Game } from "@/lib/games";
 import { agoLabel, daysSincePlayed } from "@/lib/spotlight";
 
-/** The large "continue" card — a spotlight, not a row in a list. */
+/** One case on the "continue" shelf. */
 export function ContinueCard({ game }: { game: Game }) {
   const ago = agoLabel(daysSincePlayed(game));
 
   return (
-    <Link href={`/game/${game.id}`} className="block">
+    <Link href={`/game/${game.id}`} className="group/item block">
       <CaseCover title={game.title} coverPath={game.coverPath} />
-      <p className="mt-3 truncate text-[15px] text-[#e2e0d9]">{game.title}</p>
-      <p className="mt-0.5 text-xs text-[#75746e]">
-        {game.playtime} hrs in · {ago}
-      </p>
+      <div className="mt-3.5">
+        <p className="truncate font-display text-[15px] leading-tight text-paper-dim transition-colors group-hover/item:text-paper">
+          {game.title}
+        </p>
+        <p className="catalog mt-1.5 text-paper-ghost">
+          {game.playtime} hrs · {ago}
+        </p>
+      </div>
     </Link>
   );
 }
@@ -24,24 +27,41 @@ export function ContinueCard({ game }: { game: Game }) {
  * The daily sealed pick.
  *
  * Framed as an offer, never a prompt — no "you should play this", no counter,
- * no streak. Just the object, sitting there.
+ * no streak. Just the object, sitting there, given the space of a full plate
+ * in a printed catalogue.
  */
 export function SealedPick({ game }: { game: Game }) {
   return (
-    <Link href={`/game/${game.id}`} className="group flex items-center gap-5">
-      <div className="relative aspect-[2/3] w-28 shrink-0 overflow-hidden rounded-lg bg-[#15171a] shadow-xl shadow-black/50 ring-1 ring-white/5 transition duration-300 group-hover:-translate-y-1 group-hover:ring-white/25">
-        <Cover title={game.title} coverPath={game.coverPath} />
-        {/* the sheen that stands in for shrink wrap in 2D */}
-        <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-[#7fb6df]/10" />
-      </div>
+    <Link
+      href={`/game/${game.id}`}
+      className="group/pick grid grid-cols-[minmax(0,9rem)_1fr] items-center gap-8 sm:grid-cols-[minmax(0,13rem)_1fr] sm:gap-12"
+    >
+      <CaseCover title={game.title} coverPath={game.coverPath} sealed />
+
       <div className="min-w-0">
-        <p className="truncate text-lg text-[#e2e0d9]">{game.title}</p>
-        <p className="mt-1 text-xs text-[#75746e]">
+        <span className="stamp inline-block rotate-[-2.5deg] px-2.5 py-1 text-[10px]">
           still sealed
-          {game.acquired !== "unknown" && ` · on the shelf since ${game.acquired}`}
+        </span>
+
+        <h3 className="mt-5 font-display text-[clamp(1.75rem,4.2vw,3rem)] font-semibold leading-[0.95] tracking-[-0.02em] text-paper">
+          {game.title}
+        </h3>
+
+        <p className="catalog mt-5 leading-[1.9] text-paper-faint">
+          {[game.platform, ...game.genres].join(" · ")}
+          {game.acquired !== "unknown" && (
+            <>
+              <br />
+              on the shelf since {game.acquired}
+            </>
+          )}
         </p>
-        <p className="mt-3 text-xs text-[#5f5e59] transition group-hover:text-[#8e8d86]">
-          take a look →
+
+        <p className="catalog mt-7 inline-flex items-center gap-2.5 text-paper-ghost transition-colors group-hover/pick:text-amber">
+          take a look
+          <span className="inline-block transition-transform duration-300 group-hover/pick:translate-x-1.5">
+            →
+          </span>
         </p>
       </div>
     </Link>
@@ -56,10 +76,8 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-14">
-      <h2 className="mb-5 text-xs uppercase tracking-[0.18em] text-[#5f5e59]">
-        {title}
-      </h2>
+    <section className="mb-20">
+      <h2 className="drawer-label mb-7">{title}</h2>
       {children}
     </section>
   );

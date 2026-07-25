@@ -1,26 +1,359 @@
 @import "tailwindcss";
 
+/**
+ * "Shelf" — a private archive.
+ *
+ * The visual language is a midcentury library card catalog crossed with a
+ * Criterion spine: warm ink, aged card stock, oxidised amber, and real
+ * physical depth. Nothing floats in a void — cases rest on shelves, records
+ * are printed on paper, dates are stamped.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Ink — a warm near-black, never neutral grey. */
+  --ink: #100e0b;
+  --ink-raised: #17150f;
+  --ink-edge: #241f18;
+  --ink-well: #0a0906;
+
+  /* Card stock, aged. */
+  --paper: #efe7d6;
+  --paper-dim: #b3a992;
+  --paper-faint: #7b7261;
+  --paper-ghost: #4d4739;
+
+  /* Pigments. Aged varnish, oxidised copper, faded indigo. */
+  --amber: #d9963f;
+  --amber-deep: #8a6329;
+  --verdigris: #7fa891;
+  --dusk: #7c9ab8;
+  --rust: #c4694e;
+
+  --shelf-bleed: 0.75rem;
+  --rule: rgba(239, 231, 214, 0.14);
+  --rule-strong: rgba(239, 231, 214, 0.28);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-ink-raised: var(--ink-raised);
+  --color-ink-edge: var(--ink-edge);
+  --color-ink-well: var(--ink-well);
+  --color-paper: var(--paper);
+  --color-paper-dim: var(--paper-dim);
+  --color-paper-faint: var(--paper-faint);
+  --color-paper-ghost: var(--paper-ghost);
+  --color-amber: var(--amber);
+  --color-amber-deep: var(--amber-deep);
+  --color-verdigris: var(--verdigris);
+  --color-dusk: var(--dusk);
+  --color-rust: var(--rust);
+
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background-color: var(--ink);
+  /* Native controls (checkboxes, select menus, number spinners, scrollbars)
+     render in their dark variants instead of stark system white. */
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  /* A pool of warm light at the top, falling off into the dark of the room. */
+  background-image: radial-gradient(
+    120% 70% at 50% -10%,
+    rgba(217, 150, 63, 0.09) 0%,
+    rgba(217, 150, 63, 0.03) 32%,
+    transparent 68%
+  );
+  background-attachment: fixed;
+}
+
+/**
+ * Film grain. The single detail doing the most work to keep this from
+ * reading as flat vector UI — everything sits under one layer of noise, the
+ * way a photograph of an object would.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 1px solid var(--amber);
+  outline-offset: 3px;
+}
+
+/* ── Typographic voices ───────────────────────────────────────────────── */
+
+/** Catalog metadata: call numbers, dates, hours, labels. Typewritten. */
+.catalog {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/** Section headings — a ruled label on a drawer. */
+.drawer-label {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--paper-faint);
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+.drawer-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--rule), transparent);
+}
+
+/* ── The shelf ────────────────────────────────────────────────────────── */
+
+/**
+ * A plank under a grid cell, bleeding past it by half the column gap so
+ * neighbouring cells butt into one continuous shelf across the row. Pure
+ * CSS — no row-chunking in JS, so it survives any breakpoint.
+ */
+.shelf-plank {
+  position: relative;
+}
+.shelf-plank::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--shelf-bleed) * -1);
+  right: calc(var(--shelf-bleed) * -1);
+  bottom: 0;
+  height: 9px;
+  border-radius: 1px;
+  background: linear-gradient(
+    180deg,
+    #33291b 0%,
+    #241d13 42%,
+    #14100a 78%,
+    #0b0906 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(239, 231, 214, 0.08),
+    0 10px 20px -8px rgba(0, 0, 0, 0.95);
+}
+
+/* ── Paper ────────────────────────────────────────────────────────────── */
+
+/**
+ * An actual card: warm stock, ruled, slightly imperfect.
+ *
+ * The rules and the stock gradient are stacked in one `background-image`
+ * deliberately. Split across two classes they fight — the later rule's
+ * `background-image` replaces the earlier gradient outright, and since a
+ * `background` shorthand resets `background-color` to transparent, the card
+ * renders as a hole instead of paper.
+ */
+.card-stock {
+  background-color: #ece3ce;
+  background-image:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px,
+      transparent 27px,
+      rgba(42, 36, 25, 0.11) 27px,
+      rgba(42, 36, 25, 0.11) 28px
+    ),
+    linear-gradient(180deg, #f4eddf 0%, #e4d9c1 100%);
+  color: #2a2419;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 18px 34px -14px rgba(0, 0, 0, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/**
+ * A rubber date stamp — inked unevenly, never quite square to the page.
+ *
+ * Two inks, because the same mark has to read on two very different grounds:
+ * pale blue on the dark of the shelf, oxidised red multiplied into card
+ * stock. Multiply is what makes ink sit *in* paper rather than on it, but it
+ * annihilates the mark on a dark background — hence the split.
+ */
+.stamp {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dusk);
+  border: 1.5px solid rgba(124, 154, 184, 0.5);
+  border-radius: 2px;
+}
+
+.stamp-ink {
+  color: #7c3f3a;
+  border-color: rgba(124, 63, 58, 0.62);
+  opacity: 0.82;
+  mix-blend-mode: multiply;
+}
+
+/* ── Controls ─────────────────────────────────────────────────────────── */
+
+/**
+ * Buttons are pressed-metal plates, not pills. Square corners, a hairline
+ * bevel, and an amber wash on hover — closer to a drawer pull than to a
+ * web button.
+ */
+.btn {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  padding: 0.6rem 1.05rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(239, 231, 214, 0.05), rgba(239, 231, 214, 0.01));
+  box-shadow: inset 0 1px 0 rgba(239, 231, 214, 0.07);
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--amber);
+  border-color: var(--amber);
+}
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  color: var(--ink);
+  background: linear-gradient(180deg, #e5a54c, var(--amber));
+  border-color: var(--amber);
+}
+.btn-primary:hover:not(:disabled) {
+  background: #ecb264;
+  border-color: #ecb264;
+}
+
+/** A form field ruled onto the page — a line to write on, not a box. */
+.field {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  padding: 0.35rem 0 0.45rem;
+  color: var(--paper);
+  font-family: var(--font-plex-sans), sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  border-radius: 0;
+}
+.field:focus {
+  border-color: var(--amber);
+}
+.field::placeholder {
+  color: var(--paper-ghost);
+}
+textarea.field {
+  resize: none;
+  line-height: 1.55;
+}
+select.field {
+  cursor: pointer;
+}
+select.field option {
+  background: var(--ink-raised);
+  color: var(--paper);
+}
+
+/** The label above a ruled field. */
+.field-label {
+  display: block;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--paper-ghost);
+  margin-bottom: 0.25rem;
+}
+
+/** A raised panel — the surface of the desk the archive is worked on. */
+.panel {
+  background:
+    linear-gradient(180deg, rgba(239, 231, 214, 0.045), rgba(239, 231, 214, 0.015));
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(239, 231, 214, 0.06),
+    0 22px 44px -22px rgba(0, 0, 0, 0.9);
+}
+
+/**
+ * The same panel, but floating over content rather than over empty page.
+ * Needs a near-opaque ground: at the base panel's 4% wash, cover art reads
+ * straight through the form and the fields become unreadable.
+ */
+.panel-float {
+  background-color: rgba(20, 18, 13, 0.97);
+  box-shadow:
+    inset 0 1px 0 rgba(239, 231, 214, 0.07),
+    0 30px 60px -18px rgba(0, 0, 0, 0.96),
+    0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────── */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheen {
+  from {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(320%) skewX(-18deg);
+  }
+}
+
+.rise {
+  animation: rise 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

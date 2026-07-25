@@ -26,73 +26,79 @@ export default async function ConnectSteamPage({
   const probe = !connection && params.steamid ? await probePublicProfile(params.steamid) : null;
 
   return (
-    <main className="min-h-screen bg-[#101113] px-6 py-16 text-[#e9e7e0]">
+    <main className="min-h-screen px-6 py-24">
       <div className="mx-auto max-w-xl">
         <Link
           href="/library"
-          className="mb-6 inline-block text-xs text-[#75746e] transition hover:text-[#c9c7c0]"
+          className="catalog inline-block text-paper-ghost transition-colors hover:text-amber"
         >
-          ← back to the shelf
+          ← the shelf
         </Link>
-        <h1 className="mb-6 text-2xl font-medium tracking-tight">Connect Steam</h1>
 
-        {connection ? (
-          <div className="rounded-xl border border-white/12 bg-white/[0.03] p-6 text-sm leading-relaxed text-[#a8a69f]">
-            <p className="mb-4">
-              Connected as{" "}
-              <span className="text-[#e9e7e0]">SteamID {connection.steamId}</span>
-              {connection.mode === "public-profile"
-                ? " via your public profile — no API key stored."
-                : " via an API key."}
-            </p>
-            <DisconnectButton />
-          </div>
-        ) : probe?.ok ? (
-          <PublicProfilePanel steamId={params.steamid!} gameCount={probe.gameCount} />
-        ) : params.steamid ? (
-          <div>
-            <div className="mb-4 rounded-xl border border-white/12 bg-white/[0.03] p-6 text-sm leading-relaxed text-[#a8a69f]">
-              <p className="mb-2 text-[#e8bd6b]">
-                Couldn&apos;t connect without a key.
+        <h1 className="mt-9 font-display text-[clamp(2.25rem,5vw,3.25rem)] font-semibold leading-[0.9] tracking-[-0.03em] text-paper">
+          Connect Steam
+        </h1>
+        <div className="mt-6 h-px w-full bg-[var(--rule-strong)]" />
+        <div className="mt-[3px] h-px w-full bg-[var(--rule)]" />
+
+        <div className="mt-10">
+          {connection ? (
+            <div className="panel p-8">
+              <p className="drawer-label mb-5">accession source</p>
+              <p className="font-display text-lg leading-relaxed text-paper">
+                SteamID {connection.steamId}
               </p>
-              <p>{probe?.error}</p>
-              <p className="mt-3 text-xs">
-                Either{" "}
-                <a
-                  href="https://steamcommunity.com/my/edit/settings"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#7fb6df] hover:underline"
-                >
-                  set &quot;Game details&quot; to Public
-                </a>{" "}
-                and reload this page, or paste an API key below.
+              <p className="catalog mt-3 leading-[1.9] text-paper-faint">
+                {connection.mode === "public-profile"
+                  ? "via your public profile · no api key stored"
+                  : "via an api key"}
               </p>
+              <div className="mt-8">
+                <DisconnectButton />
+              </div>
             </div>
-            <ApiKeyForm steamId={params.steamid} />
-          </div>
-        ) : (
-          <div className="rounded-xl border border-white/12 bg-white/[0.03] p-6 text-sm leading-relaxed text-[#a8a69f]">
-            {params.error && (
-              <p className="mb-4 text-[#e8877b]">
-                Steam sign-in could not be verified. Try again.
+          ) : probe?.ok ? (
+            <PublicProfilePanel steamId={params.steamid!} gameCount={probe.gameCount} />
+          ) : params.steamid ? (
+            <div className="space-y-5">
+              <div className="panel p-8">
+                <p className="drawer-label mb-5">no public record</p>
+                <p className="text-sm leading-relaxed text-paper-dim">{probe?.error}</p>
+                <p className="catalog mt-5 leading-[1.9] text-paper-ghost">
+                  either{" "}
+                  <a
+                    href="https://steamcommunity.com/my/edit/settings"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber underline decoration-[var(--amber-deep)] underline-offset-4 hover:decoration-[var(--amber)]"
+                  >
+                    set game details to public
+                  </a>{" "}
+                  and reload, or file a key below.
+                </p>
+              </div>
+              <ApiKeyForm steamId={params.steamid} />
+            </div>
+          ) : (
+            <div className="panel p-8">
+              {params.error && (
+                <p className="catalog mb-5 leading-[1.9] text-rust">
+                  steam sign-in could not be verified. try again.
+                </p>
+              )}
+              <p className="text-sm leading-relaxed text-paper-dim">
+                Sign in through Steam to fill in your SteamID64 automatically.
+                This only proves who you are — Steam has no scoped-access flow
+                for the Web API, so it doesn&apos;t grant this app anything by
+                itself. If your profile is public, that&apos;s all you&apos;ll
+                need.
               </p>
-            )}
-            <p className="mb-4">
-              Sign in through Steam to fill in your SteamID64 automatically.
-              This only proves who you are — Steam has no scoped-access flow
-              for the Web API, so it doesn&apos;t grant this app anything by
-              itself. If your profile is public, that&apos;s all you&apos;ll
-              need; otherwise you&apos;ll paste a Web API key on the next step.
-            </p>
-            <a
-              href="/api/auth/steam"
-              className="inline-block rounded-lg border border-white/25 px-4 py-2 text-[13px] text-[#e9e7e0] transition hover:border-white/45 hover:bg-white/5"
-            >
-              Sign in through Steam →
-            </a>
-          </div>
-        )}
+              <a href="/api/auth/steam" className="btn btn-primary mt-8 inline-block">
+                sign in through steam →
+              </a>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );

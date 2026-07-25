@@ -59,6 +59,7 @@ function toGame(row: Row, stamps?: string[], importedAt?: number): Game {
       (playtime > 0
         ? `last played ${shortDate(game.lastPlayedAt)}`
         : "never launched"),
+    noteIsOwn: Boolean(user?.note),
     stamps,
     coverPath: game.coverPath,
     description: game.description,

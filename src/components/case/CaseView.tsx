@@ -13,10 +13,16 @@ const CaseStage = dynamic(() => import("./CaseStage").then((m) => m.CaseStage), 
   ssr: false,
 });
 
-const STATE_STYLE = {
-  unopened: "bg-[#1d3040] text-[#7fb6df]",
-  unfinished: "bg-[#3a2f18] text-[#e8bd6b]",
-  finished: "bg-[#1f3327] text-[#82c497]",
+const STATE_LABEL = {
+  unopened: "sealed",
+  unfinished: "in progress",
+  finished: "completed",
+} as const;
+
+const STATE_INK = {
+  unopened: "var(--dusk)",
+  unfinished: "var(--amber)",
+  finished: "var(--verdigris)",
 } as const;
 
 /**
@@ -94,38 +100,57 @@ export function CaseView({ game }: { game: Game }) {
           />
         </div>
 
-        <div className="pointer-events-none absolute right-6 top-6">
+        <div className="pointer-events-none absolute right-6 top-7 sm:right-10">
           <GameEditor game={game} />
         </div>
 
-        <div className="pointer-events-none absolute left-6 top-6 max-w-[320px]">
+        <div className="pointer-events-none absolute left-6 top-7 max-w-[22rem] sm:left-10">
           <Link
             href="/library"
-            className="pointer-events-auto mb-3 inline-block text-xs text-[#75746e] transition hover:text-[#c9c7c0]"
+            className="catalog pointer-events-auto inline-block text-paper-ghost transition-colors hover:text-amber"
           >
-            ← back to the shelf
+            ← the shelf
           </Link>
-          <div>
+
+          <div className="mt-8">
             <span
-              className={`mb-2 inline-block rounded-md px-2 py-1 text-[11px] uppercase tracking-wider ${STATE_STYLE[state]}`}
+              className="catalog inline-flex items-center gap-2"
+              style={{ color: STATE_INK[state] }}
             >
-              {state}
+              <span
+                aria-hidden
+                className="inline-block h-1 w-1 rounded-full"
+                style={{ background: STATE_INK[state] }}
+              />
+              {STATE_LABEL[state]}
             </span>
-            <h1 className="mb-1.5 text-[19px] font-medium">{game.title}</h1>
-            <p className="text-xs tracking-wide text-[#8e8d86]">
-              {game.playtime > 0
-                ? `${game.playtime} hrs played · ${game.note}`
-                : game.acquired === "unknown"
-                  ? "never launched · still sealed"
-                  : `never launched · owned since ${game.acquired}`}
-            </p>
-            <p className="mt-0.5 text-xs tracking-wide text-[#75746e]">
+
+            <h1 className="mt-3.5 font-display text-[clamp(1.9rem,3.4vw,2.9rem)] font-semibold leading-[0.94] tracking-[-0.025em] text-paper">
+              {game.title}
+            </h1>
+
+            <div className="mt-5 h-px w-14 bg-[var(--rule-strong)]" />
+
+            <p className="catalog mt-5 leading-[1.9] text-paper-faint">
+              {game.playtime > 0 ? `${game.playtime} hrs` : "never launched"}
+              <br />
               {[game.platform, ...game.genres].join(" · ")}
             </p>
+
+            {/* Only the owner's own words are set as a quotation — a
+                generated stand-in gets the plain metadata voice. */}
+            {game.note &&
+              (game.noteIsOwn ? (
+                <p className="mt-5 max-w-[18rem] font-display text-[15px] italic leading-relaxed text-paper-dim">
+                  “{game.note}”
+                </p>
+              ) : (
+                <p className="catalog mt-5 text-paper-ghost">{game.note}</p>
+              ))}
           </div>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-2.5 bg-gradient-to-t from-[#101113]/95 to-transparent px-6 pb-5 pt-4">
+        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-4 bg-gradient-to-t from-[var(--ink)] via-[var(--ink)]/85 to-transparent px-6 pb-7 pt-16 sm:px-10">
           <button
             onClick={() => setOpen((o) => !o)}
             disabled={sealed}
@@ -134,12 +159,18 @@ export function CaseView({ game }: { game: Game }) {
                 ? "still sealed — the wrap comes off when playtime is recorded"
                 : undefined
             }
-            className="rounded-lg border border-white/25 px-4 py-2 text-[13px] transition hover:border-white/45 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-white/25 disabled:hover:bg-transparent"
+            className="btn"
           >
             {open ? "close case" : "open case"}
           </button>
-          <span className="ml-auto text-xs text-[#75746e]">
+          <span className="catalog text-paper-ghost">
             drag to rotate{sealed && " · sealed until played"}
+          </span>
+          <span className="catalog ml-auto hidden items-center gap-2.5 text-paper-ghost sm:inline-flex">
+            record below
+            <span aria-hidden className="animate-bounce">
+              ↓
+            </span>
           </span>
         </div>
       </div>

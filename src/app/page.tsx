@@ -8,6 +8,12 @@ import { continueWhereYouLeftOff, pulledFromTheShelf } from "@/lib/spotlight";
 
 export const dynamic = "force-dynamic";
 
+const TODAY = new Intl.DateTimeFormat("en", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
 export default async function Home() {
   // Nothing to spotlight until a library exists — checked against the
   // database directly, not Steam config, since a manual-only library
@@ -21,40 +27,51 @@ export default async function Home() {
   const sealedCount = games.filter((g) => shelfState(g) === "unopened").length;
 
   return (
-    <main className="min-h-screen bg-[#101113] px-6 py-14 text-[#e9e7e0] sm:px-10">
+    <main className="min-h-screen px-6 pb-28 pt-16 sm:px-10 lg:px-14">
       <div className="mx-auto max-w-4xl">
-        <header className="mb-14 flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="text-2xl font-medium tracking-tight">Shelf</h1>
-          <Link
-            href="/library"
-            className="text-sm text-[#75746e] transition hover:text-[#c9c7c0]"
-          >
-            all {games.length} games →
-          </Link>
+        {/* ── Masthead ─────────────────────────────────────────────── */}
+        <header className="mb-20">
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <h1 className="font-display text-[clamp(2.5rem,6vw,4rem)] font-semibold leading-[0.85] tracking-[-0.03em] text-paper">
+              Shelf
+            </h1>
+            <Link href="/library" className="catalog text-paper-faint transition-colors hover:text-amber">
+              all {games.length} →
+            </Link>
+          </div>
+          <div className="mt-6 h-px w-full bg-[var(--rule-strong)]" />
+          <div className="mt-[3px] h-px w-full bg-[var(--rule)]" />
+          <p className="catalog mt-4 text-paper-ghost">{TODAY.format(new Date())}</p>
         </header>
 
-        {resume.length > 0 && (
-          <Section title="Continue where you left off">
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
-              {resume.map((g) => (
-                <ContinueCard key={g.id} game={g} />
-              ))}
-            </div>
-          </Section>
-        )}
-
         {sealed && (
-          <Section title="Pulled from the shelf today">
+          <Section title="pulled from the shelf today">
             <SealedPick game={sealed} />
-            <p className="mt-6 text-xs text-[#4e4d49]">
+            <p className="catalog mt-10 text-paper-ghost">
               one of {sealedCount} still sealed · a different one tomorrow
             </p>
           </Section>
         )}
 
+        {resume.length > 0 && (
+          <Section title="continue where you left off">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
+              {resume.map((g, i) => (
+                <div
+                  key={g.id}
+                  className="shelf-plank rise pb-3"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <ContinueCard game={g} />
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
         {resume.length === 0 && !sealed && (
-          <p className="py-20 text-center text-sm text-[#75746e]">
-            nothing to surface yet — try a sync.
+          <p className="py-24 text-center font-display text-xl italic text-paper-faint">
+            Nothing to surface yet — try a sync.
           </p>
         )}
       </div>

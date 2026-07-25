@@ -42,10 +42,18 @@ function Notice({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-[#101113] px-6 py-16 text-[#e9e7e0]">
-      <div className="mx-auto max-w-xl rounded-xl border border-white/12 bg-white/[0.03] p-6 text-sm leading-relaxed text-[#a8a69f]">
-        <h2 className="mb-2 text-base font-medium text-[#e9e7e0]">{title}</h2>
-        {children}
+    <main className="min-h-screen px-6 py-24">
+      <div className="mx-auto max-w-xl">
+        <h1 className="mb-1 font-display text-[clamp(2.25rem,5vw,3.25rem)] font-semibold leading-[0.9] tracking-[-0.03em] text-paper">
+          Shelf
+        </h1>
+        <div className="mt-6 h-px w-full bg-[var(--rule-strong)]" />
+        <div className="mt-[3px] h-px w-full bg-[var(--rule)]" />
+
+        <div className="panel mt-10 p-8 text-sm leading-relaxed text-paper-dim">
+          <h2 className="mb-4 font-display text-xl text-paper">{title}</h2>
+          {children}
+        </div>
       </div>
     </main>
   );
@@ -74,37 +82,40 @@ export default async function LibraryPage() {
 
   if (result.kind === "empty") {
     return (
-      <Notice title="The shelf is empty">
-        <p>Add a game by hand, or connect Steam to import a library.</p>
-        <div className="relative mt-4 inline-block">
+      <Notice title="Nothing on the shelf yet">
+        <p>Enter a game by hand, or connect Steam to import a library.</p>
+        <div className="relative mt-6 inline-block">
           <AddGameForm />
         </div>
         {steamConfigured ? (
-          <p className="mt-4">
+          <div className="mt-4">
             <SyncButton />
-          </p>
+          </div>
         ) : (
-          <p className="mt-4">
-            <Link href="/connect-steam" className="text-[#7fb6df] hover:underline">
-              Connect your Steam library →
+          <p className="mt-6">
+            <Link
+              href="/connect-steam"
+              className="catalog text-amber underline decoration-[var(--amber-deep)] underline-offset-4 hover:decoration-[var(--amber)]"
+            >
+              connect steam →
             </Link>
           </p>
         )}
-        <p className="mt-4 text-xs">
-          If Steam is connected and a sync still comes back empty, your Steam
-          profile&apos;s <strong>Game details</strong> privacy is not Public —
-          Steam reports that as success with an empty list.
+        <p className="catalog mt-8 leading-[1.9] text-paper-ghost">
+          if steam is connected and a sync still comes back empty, your
+          profile&apos;s game details privacy is not public — steam reports
+          that as success with an empty list.
         </p>
       </Notice>
     );
   }
 
   return (
-    <Notice title="Could not read the library">
-      <p className="font-mono text-xs text-[#e8877b]">{result.message}</p>
-      <div className="mt-6">
-        <LibraryBrowser games={SEED_GAMES} subtitle="seed data" />
-      </div>
-    </Notice>
+    <>
+      <Notice title="Could not read the library">
+        <p className="catalog leading-[1.9] text-rust">{result.message}</p>
+      </Notice>
+      <LibraryBrowser games={SEED_GAMES} subtitle="seed data · not your library" />
+    </>
   );
 }

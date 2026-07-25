@@ -8,13 +8,18 @@ import { type Game, type ShelfState, shelfState } from "@/lib/games";
 
 type Sort = "title" | "playtime" | "recent";
 
-const STATE_STYLE: Record<ShelfState, string> = {
-  unopened: "bg-[#1d3040] text-[#7fb6df]",
-  unfinished: "bg-[#3a2f18] text-[#e8bd6b]",
-  finished: "bg-[#1f3327] text-[#82c497]",
+const STATE_INK: Record<ShelfState, string> = {
+  unopened: "var(--dusk)",
+  unfinished: "var(--amber)",
+  finished: "var(--verdigris)",
 };
 
-function Chip({
+/**
+ * A tab on a catalog drawer divider — not a pill. Selection is shown by
+ * inking the label and ruling under it, the way a physical tab is worn
+ * where it has been thumbed.
+ */
+function Tab({
   active,
   onClick,
   children,
@@ -26,14 +31,29 @@ function Chip({
   return (
     <button
       onClick={onClick}
-      className={`rounded-full border px-3 py-1 text-xs transition ${
+      className={`catalog border-b pb-1 transition-colors duration-200 ${
         active
-          ? "border-white/50 bg-white/10 text-[#e9e7e0]"
-          : "border-white/15 text-[#8e8d86] hover:border-white/30 hover:text-[#c9c7c0]"
+          ? "border-amber text-paper"
+          : "border-transparent text-paper-ghost hover:text-paper-dim"
       }`}
     >
       {children}
     </button>
+  );
+}
+
+function FilterRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2.5">
+      <span className="catalog w-16 shrink-0 text-paper-ghost">{label}</span>
+      {children}
+    </div>
   );
 }
 
@@ -52,6 +72,7 @@ export function LibraryBrowser({
   const [genre, setGenre] = useState<string>("all");
   const [sort, setSort] = useState<Sort>("title");
   const [limit, setLimit] = useState(60);
+  const [allSubjects, setAllSubjects] = useState(false);
 
   const platforms = useMemo(
     () => [...new Set(games.map((g) => g.platform))].sort(),
@@ -82,122 +103,183 @@ export function LibraryBrowser({
     return [...filtered].sort(by[sort]);
   }, [games, query, state, platform, genre, sort]);
 
-  const unopened = games.filter((g) => shelfState(g) === "unopened").length;
+  const sealed = games.filter((g) => shelfState(g) === "unopened").length;
 
   return (
-    <main className="min-h-screen bg-[#101113] px-6 py-8 text-[#e9e7e0] sm:px-10">
-      <header className="mb-8 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-medium tracking-tight">Shelf</h1>
-          <p className="mt-1 text-sm text-[#75746e]">
-            {games.length} games · {unopened} still sealed
-            {subtitle ? ` · ${subtitle}` : ""}
-          </p>
-        </div>
-        {action}
-      </header>
-
-      <div className="mb-6 space-y-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="search the shelf…"
-          className="w-full max-w-sm rounded-lg border border-white/15 bg-white/[0.03] px-3 py-2 text-sm outline-none placeholder:text-[#5f5e59] focus:border-white/35"
-        />
-
-        <div className="flex flex-wrap gap-1.5">
-          <Chip active={state === "all"} onClick={() => setState("all")}>
-            all
-          </Chip>
-          {(["unopened", "unfinished", "finished"] as ShelfState[]).map((s) => (
-            <Chip key={s} active={state === s} onClick={() => setState(s)}>
-              {s}
-            </Chip>
-          ))}
-        </div>
-
-        {platforms.length > 1 && (
-          <div className="flex flex-wrap gap-1.5">
-            <Chip active={platform === "all"} onClick={() => setPlatform("all")}>
-              every platform
-            </Chip>
-            {platforms.map((p) => (
-              <Chip key={p} active={platform === p} onClick={() => setPlatform(p)}>
-                {p}
-              </Chip>
-            ))}
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          {genres.length > 0 && (
-            <>
-              <Chip active={genre === "all"} onClick={() => setGenre("all")}>
-                any genre
-              </Chip>
-              {genres.map((t) => (
-                <Chip key={t} active={genre === t} onClick={() => setGenre(t)}>
-                  {t}
-                </Chip>
-              ))}
-            </>
-          )}
-
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
-            className="ml-auto rounded-lg border border-white/15 bg-[#15171a] px-2 py-1.5 text-xs text-[#c9c7c0] outline-none focus:border-white/35"
-          >
-            <option value="title">sort: title</option>
-            <option value="playtime">sort: most played</option>
-            <option value="recent">sort: most sessions</option>
-          </select>
-        </div>
-      </div>
-
-      {shown.length === 0 ? (
-        <p className="py-20 text-center text-sm text-[#75746e]">
-          nothing on the shelf matches that.
-        </p>
-      ) : (
-        <>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {shown.slice(0, limit).map((g) => {
-              const s = shelfState(g);
-              return (
-                <li key={g.id}>
-                  <Link href={`/game/${g.id}`} className="block">
-                    <CaseCover
-                      title={g.title}
-                      coverPath={g.coverPath}
-                      sealed={s === "unopened"}
-                    />
-                    <p className="mt-2 truncate text-sm text-[#d7d5ce]">{g.title}</p>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[#75746e]">
-                      <span className={`rounded px-1.5 py-0.5 ${STATE_STYLE[s]}`}>
-                        {s}
-                      </span>
-                      <span>{g.playtime > 0 ? `${g.playtime} hrs` : g.platform}</span>
-                    </p>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-
-          {/* Cheap stand-in for virtualization until library size warrants it. */}
-          {shown.length > limit && (
-            <div className="mt-10 text-center">
-              <button
-                onClick={() => setLimit((l) => l + 60)}
-                className="rounded-lg border border-white/20 px-5 py-2 text-sm text-[#c9c7c0] transition hover:border-white/40 hover:bg-white/5"
-              >
-                show more ({shown.length - limit} left)
-              </button>
+    <main className="min-h-screen px-6 pb-24 pt-12 sm:px-10 lg:px-14">
+      <div className="mx-auto max-w-[1500px]">
+        {/* ── Masthead ─────────────────────────────────────────────── */}
+        <header className="mb-11">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <h1 className="font-display text-[clamp(2.75rem,7vw,4.75rem)] font-semibold leading-[0.85] tracking-[-0.03em] text-paper">
+                Shelf
+              </h1>
+              <p className="catalog mt-4 text-paper-faint">
+                {subtitle ?? "a private archive"}
+              </p>
             </div>
+
+            <div className="flex items-end gap-8">
+              <div className="text-right">
+                <p className="font-display text-3xl leading-none text-paper">
+                  {games.length}
+                </p>
+                <p className="catalog mt-2 text-paper-ghost">held</p>
+              </div>
+              <div className="text-right">
+                <p
+                  className="font-display text-3xl leading-none"
+                  style={{ color: "var(--dusk)" }}
+                >
+                  {sealed}
+                </p>
+                <p className="catalog mt-2 text-paper-ghost">sealed</p>
+              </div>
+              {action}
+            </div>
+          </div>
+
+          {/* Double rule — the masthead device of a printed journal. */}
+          <div className="mt-7 h-px w-full bg-[var(--rule-strong)]" />
+          <div className="mt-[3px] h-px w-full bg-[var(--rule)]" />
+        </header>
+
+        {/* ── Catalog controls ─────────────────────────────────────── */}
+        <div className="mb-12 space-y-5">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <label className="block w-full max-w-xs">
+              <span className="catalog text-paper-ghost">search</span>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="title…"
+                className="mt-2 w-full border-b border-[var(--rule-strong)] bg-transparent pb-1.5 font-display text-lg text-paper outline-none transition-colors placeholder:text-paper-ghost placeholder:font-sans placeholder:text-base focus:border-amber"
+              />
+            </label>
+
+            <label className="flex items-baseline gap-3">
+              <span className="catalog text-paper-ghost">order</span>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as Sort)}
+                className="catalog cursor-pointer border-b border-[var(--rule-strong)] bg-transparent pb-1.5 text-paper outline-none transition-colors focus:border-amber"
+              >
+                <option value="title">alphabetical</option>
+                <option value="playtime">most played</option>
+                <option value="recent">most sessions</option>
+              </select>
+            </label>
+          </div>
+
+          <FilterRow label="state">
+            <Tab active={state === "all"} onClick={() => setState("all")}>
+              all
+            </Tab>
+            {(["unopened", "unfinished", "finished"] as ShelfState[]).map((s) => (
+              <Tab key={s} active={state === s} onClick={() => setState(s)}>
+                {s}
+              </Tab>
+            ))}
+          </FilterRow>
+
+          {platforms.length > 1 && (
+            <FilterRow label="origin">
+              <Tab active={platform === "all"} onClick={() => setPlatform("all")}>
+                any
+              </Tab>
+              {platforms.map((p) => (
+                <Tab key={p} active={platform === p} onClick={() => setPlatform(p)}>
+                  {p}
+                </Tab>
+              ))}
+            </FilterRow>
           )}
-        </>
-      )}
+
+          {genres.length > 0 && (
+            <FilterRow label="subject">
+              <Tab active={genre === "all"} onClick={() => setGenre("all")}>
+                any
+              </Tab>
+              {/* Capped — a big library has dozens of subjects, and an
+                  unbounded row buries the shelf below three lines of tabs. */}
+              {(allSubjects ? genres : genres.slice(0, 9)).map((t) => (
+                <Tab key={t} active={genre === t} onClick={() => setGenre(t)}>
+                  {t}
+                </Tab>
+              ))}
+              {genres.length > 9 && (
+                <button
+                  onClick={() => setAllSubjects((v) => !v)}
+                  className="catalog pb-1 text-amber-deep transition-colors hover:text-amber"
+                >
+                  {allSubjects ? "fewer" : `+${genres.length - 9} more`}
+                </button>
+              )}
+            </FilterRow>
+          )}
+        </div>
+
+        {/* ── The shelf itself ─────────────────────────────────────── */}
+        {shown.length === 0 ? (
+          <p className="py-28 text-center font-display text-xl italic text-paper-faint">
+            Nothing on the shelf matches that.
+          </p>
+        ) : (
+          <>
+            <ul className="grid grid-cols-2 gap-x-6 gap-y-14 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {shown.slice(0, limit).map((g, i) => {
+                const s = shelfState(g);
+                return (
+                  <li
+                    key={g.id}
+                    className="shelf-plank rise pb-4"
+                    // Capped so a large library still finishes settling quickly.
+                    style={{ animationDelay: `${Math.min(i, 23) * 28}ms` }}
+                  >
+                    <Link href={`/game/${g.id}`} className="group/item block">
+                      <CaseCover
+                        title={g.title}
+                        coverPath={g.coverPath}
+                        sealed={s === "unopened"}
+                      />
+                      <div className="mt-3.5 px-0.5">
+                        <p className="truncate font-display text-[15px] leading-tight text-paper-dim transition-colors duration-200 group-hover/item:text-paper">
+                          {g.title}
+                        </p>
+                        <p className="catalog mt-1.5 flex items-center gap-2 text-paper-ghost">
+                          <span
+                            aria-hidden
+                            className="inline-block h-1 w-1 shrink-0 rounded-full"
+                            style={{ background: STATE_INK[s] }}
+                          />
+                          <span className="truncate">
+                            {g.playtime > 0 ? `${g.playtime} hrs` : g.platform}
+                          </span>
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Cheap stand-in for virtualization until library size warrants it. */}
+            {shown.length > limit && (
+              <div className="mt-16 flex items-center gap-5">
+                <div className="h-px flex-1 bg-[var(--rule)]" />
+                <button
+                  onClick={() => setLimit((l) => l + 60)}
+                  className="catalog text-paper-faint transition-colors hover:text-amber"
+                >
+                  draw {Math.min(60, shown.length - limit)} more
+                </button>
+                <div className="h-px flex-1 bg-[var(--rule)]" />
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </main>
   );
 }
