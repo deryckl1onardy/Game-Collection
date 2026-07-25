@@ -1,10 +1,13 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { ensureMigrated } from "@/db/migrate";
 import { games, sessions, userGames } from "@/db/schema";
+import { enrichGame } from "./enrich";
 import type { Game, Platform, Source } from "./games";
 
 const MONTHS = [
@@ -100,6 +103,60 @@ export async function getLibrary(): Promise<Game[]> {
   ]);
 
   return rows.map((r) => toGame(r, undefined, importedAt));
+}
+
+/**
+ * Adds a hand-entered game (ADR-0006) — Switch, GOG, PSN, Xbox, or a
+ * physical copy, none of which sync has any way to see.
+ *
+ * Enrichment (ADR-0010) runs inline rather than waiting for the next sync's
+ * backfill: this is a rare, single-game, user-initiated action, not a batch
+ * of dozens from a Steam import, so there's no rate-limit reason to defer it,
+ * and doing it now means the detail page has a description on first visit.
+ */
+export async function createManualGame(input: {
+  title: string;
+  platform: Exclude<Platform, "Steam">;
+  playtime: number;
+  finished: boolean;
+  note: string;
+  tags: string[];
+}): Promise<string> {
+  await ensureMigrated();
+  const handle = await db();
+
+  const id = randomUUID();
+  const now = new Date();
+
+  const enrichment = await enrichGame({
+    title: input.title,
+    source: "manual",
+    sourceId: null,
+  });
+
+  await handle.insert(games).values({
+    id,
+    source: "manual",
+    sourceId: null,
+    platform: input.platform,
+    title: input.title,
+    playtime: 0, // authoritative value lives in userGames.manualPlaytime below
+    firstSeenAt: now,
+    lastSyncedAt: now,
+    ...enrichment,
+    enrichedAt: now,
+  });
+
+  await handle.insert(userGames).values({
+    gameId: id,
+    finished: input.finished,
+    finishedAt: input.finished ? now : null,
+    note: input.note.trim() || null,
+    tags: input.tags,
+    manualPlaytime: input.playtime,
+  });
+
+  return id;
 }
 
 /**

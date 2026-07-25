@@ -1,23 +1,29 @@
+import { AddGameForm } from "@/components/library/AddGameForm";
 import { LibraryBrowser } from "@/components/library/LibraryBrowser";
 import { SyncButton } from "@/components/library/SyncButton";
 import { type Game, SEED_GAMES } from "@/lib/games";
-import { getLibrary } from "@/lib/library";
+import { getLibrary, libraryIsPopulated } from "@/lib/library";
 import { steamIsConfigured } from "@/lib/steam";
 
 export const dynamic = "force-dynamic";
 
 type Result =
-  | { kind: "unconfigured" }
-  | { kind: "never-synced" }
+  | { kind: "empty" }
   | { kind: "error"; message: string }
   | { kind: "ok"; games: Game[] };
 
+/**
+ * Manual games (ADR-0006) mean the library can be non-empty with Steam never
+ * configured at all — a Switch/GOG/physical-only collection is a legitimate
+ * use of this app, not just a fallback while waiting to connect Steam. So
+ * "is there anything to show" is answered by the database, not by whether
+ * STEAM_API_KEY is set; Steam configuration only decides whether the sync
+ * button appears.
+ */
 async function load(): Promise<Result> {
-  if (!steamIsConfigured()) return { kind: "unconfigured" };
-
   try {
-    const games = await getLibrary();
-    return games.length === 0 ? { kind: "never-synced" } : { kind: "ok", games };
+    if (!(await libraryIsPopulated())) return { kind: "empty" };
+    return { kind: "ok", games: await getLibrary() };
   } catch (err) {
     return {
       kind: "error",
@@ -43,41 +49,49 @@ function Notice({
   );
 }
 
+function AddAction() {
+  return (
+    <div className="relative flex items-center gap-2">
+      {steamIsConfigured() && <SyncButton />}
+      <AddGameForm />
+    </div>
+  );
+}
+
 export default async function LibraryPage() {
   const result = await load();
 
   if (result.kind === "ok") {
-    return <LibraryBrowser games={result.games} action={<SyncButton />} />;
+    return <LibraryBrowser games={result.games} action={<AddAction />} />;
   }
 
-  if (result.kind === "unconfigured") {
-    return (
-      <Notice title="Steam is not connected yet">
-        <p>
-          Put your credentials in <code className="text-[#e8bd6b]">.env.local</code>:
-        </p>
-        <pre className="my-3 overflow-x-auto rounded-lg bg-black/40 p-3 text-xs text-[#c9c7c0]">
-          {`STEAM_API_KEY=your-key-here\nSTEAM_ID=your-17-digit-steamid64`}
-        </pre>
-        <p>Then restart the dev server.</p>
-      </Notice>
-    );
-  }
-
-  if (result.kind === "never-synced") {
+  if (result.kind === "empty") {
     return (
       <Notice title="The shelf is empty">
-        <p>
-          Steam is connected but nothing has been synced yet. Run the first sync
-          to pull your library in.
-        </p>
-        <p className="mt-4">
-          <SyncButton />
-        </p>
+        <p>Add a game by hand, or connect Steam to import a library.</p>
+        <div className="relative mt-4 inline-block">
+          <AddGameForm />
+        </div>
+        {steamIsConfigured() ? (
+          <p className="mt-4">
+            <SyncButton />
+          </p>
+        ) : (
+          <>
+            <p className="mt-4">
+              To import from Steam, put your credentials in{" "}
+              <code className="text-[#e8bd6b]">.env.local</code>:
+            </p>
+            <pre className="my-3 overflow-x-auto rounded-lg bg-black/40 p-3 text-xs text-[#c9c7c0]">
+              {`STEAM_API_KEY=your-key-here\nSTEAM_ID=your-17-digit-steamid64`}
+            </pre>
+            <p>Then restart the dev server.</p>
+          </>
+        )}
         <p className="mt-4 text-xs">
-          If it comes back with zero games, your Steam profile&apos;s{" "}
-          <strong>Game details</strong> privacy is not Public — Steam reports
-          that as success with an empty list.
+          If Steam is connected and a sync still comes back empty, your Steam
+          profile&apos;s <strong>Game details</strong> privacy is not Public —
+          Steam reports that as success with an empty list.
         </p>
       </Notice>
     );
