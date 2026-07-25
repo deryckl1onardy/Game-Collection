@@ -31,6 +31,79 @@
   --shelf-bleed: 0.75rem;
   --rule: rgba(239, 231, 214, 0.14);
   --rule-strong: rgba(239, 231, 214, 0.28);
+
+  /* Surfaces that are not simply "ink" or "paper" — see the light overrides
+     below, where several of these invert rather than lighten. */
+  --wash: rgba(239, 231, 214, 0.045);
+  --wash-strong: rgba(239, 231, 214, 0.05);
+  --bevel: rgba(239, 231, 214, 0.07);
+  --float: rgba(20, 18, 13, 0.97);
+  --glow: rgba(217, 150, 63, 0.09);
+  --plank-1: #33291b;
+  --plank-2: #241d13;
+  --plank-3: #14100a;
+  --plank-4: #0b0906;
+  --grain-blend: overlay;
+  --grain-opacity: 0.045;
+}
+
+/**
+ * The same archive by daylight.
+ *
+ * Not an inversion — the roles hold (`--ink` is always the ground, `--paper`
+ * always the text on it), but the pigments change: aged card stock becomes
+ * the room, and the amber deepens, because the varnish tone that reads as
+ * warm light on near-black is far too pale to carry against cream.
+ */
+:root[data-theme="light"] {
+  --ink: #e9e1ce;
+  --ink-raised: #f1ebdd;
+  --ink-edge: #d5cab1;
+  --ink-well: #dcd2bb;
+
+  --paper: #221d15;
+  --paper-dim: #463f33;
+  --paper-faint: #635a49;
+  --paper-ghost: #7a7160;
+
+  --amber: #9c6216;
+  --amber-deep: #c3945a;
+  --verdigris: #47755e;
+  --dusk: #46698c;
+  --rust: #a3422a;
+
+  --rule: rgba(34, 29, 21, 0.16);
+  --rule-strong: rgba(34, 29, 21, 0.3);
+
+  --wash: rgba(34, 29, 21, 0.035);
+  --wash-strong: rgba(34, 29, 21, 0.05);
+  --bevel: rgba(255, 255, 255, 0.6);
+  --float: rgba(245, 240, 229, 0.975);
+  --glow: rgba(156, 98, 22, 0.07);
+
+  /* A shelf in a lit room is mid-tone timber, not a silhouette. */
+  --plank-1: #b39a76;
+  --plank-2: #9a7f5c;
+  --plank-3: #7c6346;
+  --plank-4: #5f4a34;
+
+  /* Overlay grain blows out on a pale ground; multiply keeps it as tooth. */
+  --grain-blend: multiply;
+  --grain-opacity: 0.03;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* The toggle names the room you are switching *to*, chosen in CSS so no
+   theme-dependent markup has to survive hydration. */
+[data-theme="dark"] .when-light,
+[data-theme="light"] .when-dark {
+  display: none;
 }
 
 @theme inline {
@@ -55,20 +128,16 @@
 
 html {
   background-color: var(--ink);
-  /* Native controls (checkboxes, select menus, number spinners, scrollbars)
-     render in their dark variants instead of stark system white. */
-  color-scheme: dark;
 }
 
 body {
   background-color: var(--ink);
   color: var(--paper);
   font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  /* A pool of warm light at the top, falling off into the dark of the room. */
+  /* A pool of warm light at the top, falling off into the room. */
   background-image: radial-gradient(
     120% 70% at 50% -10%,
-    rgba(217, 150, 63, 0.09) 0%,
-    rgba(217, 150, 63, 0.03) 32%,
+    var(--glow) 0%,
     transparent 68%
   );
   background-attachment: fixed;
@@ -85,8 +154,8 @@ body::before {
   inset: 0;
   z-index: 100;
   pointer-events: none;
-  opacity: 0.045;
-  mix-blend-mode: overlay;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -148,14 +217,14 @@ body::before {
   border-radius: 1px;
   background: linear-gradient(
     180deg,
-    #33291b 0%,
-    #241d13 42%,
-    #14100a 78%,
-    #0b0906 100%
+    var(--plank-1) 0%,
+    var(--plank-2) 42%,
+    var(--plank-3) 78%,
+    var(--plank-4) 100%
   );
   box-shadow:
-    inset 0 1px 0 rgba(239, 231, 214, 0.08),
-    0 10px 20px -8px rgba(0, 0, 0, 0.95);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 20px -8px rgba(0, 0, 0, 0.6);
 }
 
 /* ── Paper ────────────────────────────────────────────────────────────── */
@@ -185,6 +254,28 @@ body::before {
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     0 18px 34px -14px rgba(0, 0, 0, 0.9),
     0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/**
+ * By daylight the card is nearly the same tone as the room it is lying in,
+ * so it needs an edge and a tighter shadow to still read as a separate
+ * object rather than a patch of the page.
+ */
+:root[data-theme="light"] .card-stock {
+  background-color: #f7f2e6;
+  background-image:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px,
+      transparent 27px,
+      rgba(42, 36, 25, 0.1) 27px,
+      rgba(42, 36, 25, 0.1) 28px
+    ),
+    linear-gradient(180deg, #fbf7ee 0%, #f0e9d9 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 0 rgba(34, 29, 21, 0.16),
+    0 14px 26px -12px rgba(34, 29, 21, 0.35);
 }
 
 /**
@@ -227,8 +318,8 @@ body::before {
   padding: 0.6rem 1.05rem;
   border: 1px solid var(--rule-strong);
   border-radius: 2px;
-  background: linear-gradient(180deg, rgba(239, 231, 214, 0.05), rgba(239, 231, 214, 0.01));
-  box-shadow: inset 0 1px 0 rgba(239, 231, 214, 0.07);
+  background-color: var(--wash-strong);
+  box-shadow: inset 0 1px 0 var(--bevel);
   transition:
     color 0.2s,
     border-color 0.2s,
@@ -247,12 +338,12 @@ body::before {
 
 .btn-primary {
   color: var(--ink);
-  background: linear-gradient(180deg, #e5a54c, var(--amber));
+  background-color: var(--amber);
   border-color: var(--amber);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 .btn-primary:hover:not(:disabled) {
-  background: #ecb264;
-  border-color: #ecb264;
+  filter: brightness(1.12);
 }
 
 /** A form field ruled onto the page — a line to write on, not a box. */
@@ -300,13 +391,12 @@ select.field option {
 
 /** A raised panel — the surface of the desk the archive is worked on. */
 .panel {
-  background:
-    linear-gradient(180deg, rgba(239, 231, 214, 0.045), rgba(239, 231, 214, 0.015));
+  background-color: var(--wash);
   border: 1px solid var(--rule);
   border-radius: 3px;
   box-shadow:
-    inset 0 1px 0 rgba(239, 231, 214, 0.06),
-    0 22px 44px -22px rgba(0, 0, 0, 0.9);
+    inset 0 1px 0 var(--bevel),
+    0 22px 44px -22px rgba(0, 0, 0, 0.55);
 }
 
 /**
@@ -315,11 +405,11 @@ select.field option {
  * straight through the form and the fields become unreadable.
  */
 .panel-float {
-  background-color: rgba(20, 18, 13, 0.97);
+  background-color: var(--float);
   box-shadow:
-    inset 0 1px 0 rgba(239, 231, 214, 0.07),
-    0 30px 60px -18px rgba(0, 0, 0, 0.96),
-    0 0 0 1px rgba(0, 0, 0, 0.5);
+    inset 0 1px 0 var(--bevel),
+    0 30px 60px -18px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 0, 0, 0.28);
 }
 
 /* ── Motion ───────────────────────────────────────────────────────────── */

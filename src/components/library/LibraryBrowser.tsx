@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useState, ViewTransition } from "react";
 import Link from "next/link";
 
 import { CaseCover } from "@/components/library/CaseCover";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { type Game, type ShelfState, shelfState } from "@/lib/games";
 import { rememberShelfScroll, takeShelfScroll } from "@/lib/shelf-history";
 
@@ -149,6 +150,7 @@ export function LibraryBrowser({
                 <p className="catalog mt-2 text-paper-ghost">sealed</p>
               </div>
               {action}
+              <ThemeToggle className="pb-1" />
             </div>
           </div>
 

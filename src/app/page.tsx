@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ContinueCard, SealedPick, Section } from "@/components/home/Spotlight";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { shelfState } from "@/lib/games";
 import { getLibrary, libraryIsPopulated } from "@/lib/library";
 import { continueWhereYouLeftOff, pulledFromTheShelf } from "@/lib/spotlight";
@@ -35,9 +36,15 @@ export default async function Home() {
             <h1 className="font-display text-[clamp(2.5rem,6vw,4rem)] font-semibold leading-[0.85] tracking-[-0.03em] text-paper">
               Shelf
             </h1>
-            <Link href="/library" className="catalog text-paper-faint transition-colors hover:text-amber">
-              all {games.length} →
-            </Link>
+            <div className="flex items-baseline gap-7">
+              <ThemeToggle />
+              <Link
+                href="/library"
+                className="catalog text-paper-faint transition-colors hover:text-amber"
+              >
+                all {games.length} →
+              </Link>
+            </div>
           </div>
           <div className="mt-6 h-px w-full bg-[var(--rule-strong)]" />
           <div className="mt-[3px] h-px w-full bg-[var(--rule)]" />

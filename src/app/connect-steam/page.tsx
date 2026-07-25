@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ApiKeyForm } from "@/components/steam/ApiKeyForm";
 import { DisconnectButton } from "@/components/steam/DisconnectButton";
 import { PublicProfilePanel } from "@/components/steam/PublicProfilePanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { probePublicProfile } from "@/lib/steam";
 import { getStoredSteamConnection } from "@/lib/steam-connection";
 
@@ -28,12 +29,15 @@ export default async function ConnectSteamPage({
   return (
     <main className="min-h-screen px-6 py-24">
       <div className="mx-auto max-w-xl">
-        <Link
-          href="/library"
-          className="catalog inline-block text-paper-ghost transition-colors hover:text-amber"
-        >
-          ← the shelf
-        </Link>
+        <div className="flex items-baseline justify-between gap-6">
+          <Link
+            href="/library"
+            className="catalog inline-block text-paper-ghost transition-colors hover:text-amber"
+          >
+            ← the shelf
+          </Link>
+          <ThemeToggle />
+        </div>
 
         <h1 className="mt-9 font-display text-[clamp(2.25rem,5vw,3.25rem)] font-semibold leading-[0.9] tracking-[-0.03em] text-paper">
           Connect Steam

@@ -5,7 +5,9 @@ import dynamic from "next/dynamic";
 import * as THREE from "three";
 
 import { CaseCover } from "@/components/library/CaseCover";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { type Game, shelfState } from "@/lib/games";
+import { useThemeColor } from "@/lib/theme";
 import { BackToShelf } from "./BackToShelf";
 import { GameDetails } from "./GameDetails";
 import { GameEditor } from "./GameEditor";
@@ -90,12 +92,15 @@ export function CaseView({ game }: { game: Game }) {
   const [open, setOpen] = useState(false);
   const [stageReady, setStageReady] = useState(false);
   const cover = useCoverTexture(game.coverPath);
+  const stageBackground = useThemeColor("--ink", "#100e0b");
 
   const state = shelfState(game);
   const sealed = state === "unopened";
 
+  // <main> deliberately sets no background or text colour: both come from
+  // <body>, so this page tracks the theme instead of pinning one.
   return (
-    <main className="bg-[#101113] font-sans text-[#e9e7e0]">
+    <main>
       {/* Fixed-viewport hero — the page scrolls past it to GameDetails below,
           rather than the whole page being locked to one screen like before
           enrichment data needed somewhere to live. */}
@@ -134,11 +139,13 @@ export function CaseView({ game }: { game: Game }) {
             }}
             open={open}
             coverTexture={cover}
+            background={stageBackground}
             onReady={() => setStageReady(true)}
           />
         </div>
 
-        <div className="pointer-events-none absolute right-6 top-7 sm:right-10">
+        <div className="pointer-events-none absolute right-6 top-7 flex items-start gap-6 sm:right-10">
+          <ThemeToggle className="pointer-events-auto mt-3" />
           <GameEditor game={game} />
         </div>
 

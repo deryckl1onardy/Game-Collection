@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 
 /**
  * Three voices, borrowed from the objects this app is about:
@@ -44,7 +45,14 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${fraunces.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
+      // Set by the boot script below before paint; declared here so the
+      // server markup already carries an attribute for CSS to match on.
+      data-theme="dark"
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

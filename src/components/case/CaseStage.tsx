@@ -14,8 +14,9 @@ import { StudioEnvironment } from "./StudioEnvironment";
  */
 export function CaseStage({
   onReady,
+  background,
   ...props
-}: GameCaseProps & { onReady?: () => void }) {
+}: GameCaseProps & { onReady?: () => void; background: string }) {
   return (
     <Canvas
       shadows
@@ -29,9 +30,10 @@ export function CaseStage({
       // @use-gesture warns about it explicitly.
       style={{ touchAction: "none" }}
     >
-      {/* Must track --ink in globals.css, or the WebGL surface reads as a
-          slightly different, cooler black than the page around it. */}
-      <color attach="background" args={["#100e0b"]} />
+      {/* Passed in from the live value of --ink: WebGL cannot reference a CSS
+          variable, and a hardcoded colour would keep the canvas dark after a
+          switch to the light theme. */}
+      <color attach="background" args={[background]} />
 
       {/* Locally generated + PMREM-processed, so clearcoat is reliable and
           nothing is fetched from an external origin at runtime. */}
