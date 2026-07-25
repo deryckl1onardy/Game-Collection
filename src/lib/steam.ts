@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Game } from "./games";
+import { getStoredSteamConnection } from "./steam-connection";
 
 /**
  * Steam Web API client.
@@ -23,18 +24,77 @@ export type OwnedGame = {
 export class SteamConfigError extends Error {}
 export class SteamApiError extends Error {}
 
-function config() {
-  const key = process.env.STEAM_API_KEY;
-  const steamId = process.env.STEAM_ID;
+/**
+ * Credentials come from `STEAM_API_KEY`/`STEAM_ID` env vars if set, else the
+ * database row saved by the "connect Steam" flow (ADR-0012). Env vars win —
+ * they're the natural choice for a deployed Vercel Cron run, which has no
+ * browser to click through a sign-in flow with, and letting them override
+ * means a deploy-time override always wins over whatever was clicked
+ * through the UI.
+ */
+export async function resolveSteamCredentials(): Promise<
+  { key: string; steamId: string } | null
+> {
+  const envKey = process.env.STEAM_API_KEY;
+  const envSteamId = process.env.STEAM_ID;
+  if (envKey && envSteamId) return { key: envKey, steamId: envSteamId };
 
-  if (!key) throw new SteamConfigError("STEAM_API_KEY is not set in .env.local");
-  if (!steamId) throw new SteamConfigError("STEAM_ID is not set in .env.local");
+  const stored = await getStoredSteamConnection();
+  if (stored) return { key: stored.apiKey, steamId: stored.steamId };
 
-  return { key, steamId };
+  return null;
 }
 
-export function steamIsConfigured() {
-  return Boolean(process.env.STEAM_API_KEY && process.env.STEAM_ID);
+async function config() {
+  const creds = await resolveSteamCredentials();
+  if (!creds) {
+    throw new SteamConfigError(
+      "Steam isn't connected — sign in or set STEAM_API_KEY/STEAM_ID in .env.local",
+    );
+  }
+  return creds;
+}
+
+export async function steamIsConfigured() {
+  return (await resolveSteamCredentials()) !== null;
+}
+
+/**
+ * Tests a Steam Web API key/SteamID pair against a real endpoint, so a typo
+ * pasted into the connect flow surfaces immediately with a clear message
+ * instead of silently failing on the next sync.
+ */
+export async function validateSteamCredentials(
+  key: string,
+  steamId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const url = new URL(`${API}/ISteamUser/GetPlayerSummaries/v2/`);
+    url.searchParams.set("key", key);
+    url.searchParams.set("steamids", steamId);
+
+    const res = await fetch(url, { cache: "no-store" });
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, error: "Steam rejected this API key (401/403)." };
+    }
+    if (!res.ok) {
+      return { ok: false, error: `Steam returned ${res.status} ${res.statusText}.` };
+    }
+
+    const body = (await res.json()) as {
+      response?: { players?: unknown[] };
+    };
+    if (!body.response?.players?.length) {
+      return { ok: false, error: "Steam accepted the key but found no such SteamID." };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not reach Steam.",
+    };
+  }
 }
 
 const MONTHS = [
@@ -67,7 +127,7 @@ function coverPath(appid: number) {
  * why the caller is told to check privacy settings.
  */
 export async function fetchOwnedGamesRaw(): Promise<OwnedGame[]> {
-  const { key, steamId } = config();
+  const { key, steamId } = await config();
 
   const url = new URL(`${API}/IPlayerService/GetOwnedGames/v1/`);
   url.searchParams.set("key", key);
@@ -166,8 +226,9 @@ type QueryFilesResponse = {
 export async function fetchTopSteamGuide(
   appid: number,
 ): Promise<{ url: string; title: string } | null> {
-  const key = process.env.STEAM_API_KEY;
-  if (!key) return null;
+  const creds = await resolveSteamCredentials();
+  if (!creds) return null;
+  const { key } = creds;
 
   try {
     const url = new URL(`${API}/IPublishedFileService/QueryFiles/v1/`);

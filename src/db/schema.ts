@@ -130,6 +130,24 @@ export const sessions = pgTable(
   ],
 );
 
+/**
+ * Steam credentials, connected through the UI (ADR-0012) instead of hand-
+ * edited into `.env.local`. Single row, fixed id — this app is genuinely
+ * single-user (ADR-0003), so there is never a second connection to store.
+ *
+ * `STEAM_API_KEY`/`STEAM_ID` env vars still work and take priority when set
+ * (see resolveSteamCredentials in steam.ts) — the natural choice for a
+ * deployed Vercel Cron run, which has no browser to click through a sign-in
+ * flow with.
+ */
+export const steamConnection = pgTable("steam_connection", {
+  id: text("id").primaryKey(),
+  steamId: text("steam_id").notNull(),
+  apiKey: text("api_key").notNull(),
+  connectedAt: timestamp("connected_at").notNull().defaultNow(),
+});
+
 export type GameRow = typeof games.$inferSelect;
 export type UserGameRow = typeof userGames.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
+export type SteamConnectionRow = typeof steamConnection.$inferSelect;

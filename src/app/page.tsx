@@ -3,18 +3,18 @@ import { redirect } from "next/navigation";
 
 import { ContinueCard, SealedPick, Section } from "@/components/home/Spotlight";
 import { shelfState } from "@/lib/games";
-import { getLibrary } from "@/lib/library";
-import { steamIsConfigured } from "@/lib/steam";
+import { getLibrary, libraryIsPopulated } from "@/lib/library";
 import { continueWhereYouLeftOff, pulledFromTheShelf } from "@/lib/spotlight";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Nothing to spotlight until a library exists; the shelf page handles setup.
-  if (!steamIsConfigured()) redirect("/library");
+  // Nothing to spotlight until a library exists — checked against the
+  // database directly, not Steam config, since a manual-only library
+  // (ADR-0006) is a real case with no Steam account involved at all.
+  if (!(await libraryIsPopulated())) redirect("/library");
 
   const games = await getLibrary();
-  if (games.length === 0) redirect("/library");
 
   const resume = continueWhereYouLeftOff(games);
   const sealed = pulledFromTheShelf(games);

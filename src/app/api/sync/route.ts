@@ -15,9 +15,9 @@ export const maxDuration = 60;
  * every request.
  */
 async function handle() {
-  if (!steamIsConfigured()) {
+  if (!(await steamIsConfigured())) {
     return NextResponse.json(
-      { error: "STEAM_API_KEY and STEAM_ID must be set in .env.local" },
+      { error: "Steam isn't connected — sign in at /connect-steam or set STEAM_API_KEY/STEAM_ID." },
       { status: 400 },
     );
   }

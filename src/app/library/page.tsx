@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { AddGameForm } from "@/components/library/AddGameForm";
 import { LibraryBrowser } from "@/components/library/LibraryBrowser";
 import { SyncButton } from "@/components/library/SyncButton";
@@ -49,20 +51,25 @@ function Notice({
   );
 }
 
-function AddAction() {
+function AddAction({ steamConfigured }: { steamConfigured: boolean }) {
   return (
     <div className="relative flex items-center gap-2">
-      {steamIsConfigured() && <SyncButton />}
+      {steamConfigured && <SyncButton />}
       <AddGameForm />
     </div>
   );
 }
 
 export default async function LibraryPage() {
-  const result = await load();
+  const [result, steamConfigured] = await Promise.all([load(), steamIsConfigured()]);
 
   if (result.kind === "ok") {
-    return <LibraryBrowser games={result.games} action={<AddAction />} />;
+    return (
+      <LibraryBrowser
+        games={result.games}
+        action={<AddAction steamConfigured={steamConfigured} />}
+      />
+    );
   }
 
   if (result.kind === "empty") {
@@ -72,21 +79,16 @@ export default async function LibraryPage() {
         <div className="relative mt-4 inline-block">
           <AddGameForm />
         </div>
-        {steamIsConfigured() ? (
+        {steamConfigured ? (
           <p className="mt-4">
             <SyncButton />
           </p>
         ) : (
-          <>
-            <p className="mt-4">
-              To import from Steam, put your credentials in{" "}
-              <code className="text-[#e8bd6b]">.env.local</code>:
-            </p>
-            <pre className="my-3 overflow-x-auto rounded-lg bg-black/40 p-3 text-xs text-[#c9c7c0]">
-              {`STEAM_API_KEY=your-key-here\nSTEAM_ID=your-17-digit-steamid64`}
-            </pre>
-            <p>Then restart the dev server.</p>
-          </>
+          <p className="mt-4">
+            <Link href="/connect-steam" className="text-[#7fb6df] hover:underline">
+              Connect your Steam library →
+            </Link>
+          </p>
         )}
         <p className="mt-4 text-xs">
           If Steam is connected and a sync still comes back empty, your Steam
