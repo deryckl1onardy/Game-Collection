@@ -36,6 +36,7 @@ export function SyncButton() {
       if (body.sessionsRecorded) {
         parts.push(`${body.sessionsRecorded} played (+${body.hoursGained}h)`);
       }
+      if (body.enriched) parts.push(`${body.enriched} enriched`);
 
       setState({ kind: "done", message: parts.join(" · ") });
       router.refresh();

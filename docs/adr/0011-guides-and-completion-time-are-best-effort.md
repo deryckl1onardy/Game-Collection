@@ -1,0 +1,13 @@
+# Guides and completion time: best-effort auto-fetch, guaranteed fallback link
+
+The detail page wants a "curated" guide (not a raw uncurated community list) and a HowLongToBeat completion estimate. Neither has a documented, stable API: Steam's guide search goes through `IPublishedFileService/QueryFiles`, an undocumented Steamworks endpoint whose `filetype`/`query_type` enum values (`9` for web guide, `0` for ranked-by-vote) are recalled from the `EWorkshopFileType`/`EPublishedFileQueryType` enums rather than confirmed against a live response — Valve does not publish the numeric mapping. HowLongToBeat has no official API at all; `/api/search` is the endpoint community wrappers have used, but HLTB has a track record of rotating it specifically to break scrapers.
+
+Decision: attempt both, but never let either be the only path to the data. Each auto-fetch (`fetchTopSteamGuide`, `fetchHltbTimes`) is wrapped so any failure — wrong enum value, moved endpoint, network error — degrades to `null`, indistinguishable from "nothing found." Alongside it, a pure, always-correct fallback link ships regardless of whether the fetch worked: `steamGuidesUrl` links to the game's Steam Community guides pre-sorted by "Most Helpful" (curated by community vote, not a raw list — satisfies the actual ask even if the auto-fetch never returns anything), and `hltbSearchUrl` links to HLTB's own search page for the title. Both fallbacks are pure string formatting with no fetch involved, so they cannot break the way the scrapers can.
+
+Rejected: blocking this feature on independently verifying the exact Steam enum values or reverse-engineering HLTB's current endpoint before shipping. Both would require live access this environment couldn't reliably get (repeated 403s fetching Valve's and GitHub's docs pages during research), and the fallback-link design means a wrong guess costs nothing — it just means the auto-fetch fields stay null and the guaranteed link is what the owner clicks instead.
+
+Consequences:
+
+- `topGuideUrl`/`hltbMainHours` etc. being null does not mean "no guide exists" or "nobody has beaten this game" — it means the best-effort fetch didn't produce one. The UI must never treat null as a definitive negative.
+- If Valve's enum values turn out wrong, or HLTB rotates their endpoint, the auto-fetched fields simply stay empty for every game going forward — a silent, contained failure, not a crash. Worth spot-checking against a real response once real API keys are available.
+- `enrichedAt` is still set after an attempt even when both auto-fetches come back null, so a permanently-unmatched title isn't re-queried every sync (see MAX_ENRICH_PER_SYNC in sync.ts).

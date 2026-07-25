@@ -1,10 +1,11 @@
 import "server-only";
 
-import { eq, sql } from "drizzle-orm";
+import { eq, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { ensureMigrated } from "@/db/migrate";
 import { games, sessions } from "@/db/schema";
+import { enrichGame } from "./enrich";
 import { fetchOwnedGamesRaw } from "./steam";
 
 export type SyncReport = {
@@ -13,8 +14,18 @@ export type SyncReport = {
   updated: number;
   sessionsRecorded: number;
   hoursGained: number;
+  enriched: number;
   ranAt: string;
 };
+
+/**
+ * Detail-page enrichment (RAWG/Steam appdetails/guide/HLTB) costs several
+ * external calls per game. Capped per sync run so a large not-yet-enriched
+ * backlog — the very first sync after this feature shipped, or a big Steam
+ * library — backfills gradually across nightly runs instead of risking the
+ * route's 60s budget (see maxDuration in the sync route).
+ */
+const MAX_ENRICH_PER_SYNC = 8;
 
 /**
  * Pulls the Steam library into the database.
@@ -103,14 +114,60 @@ export async function runSync(): Promise<SyncReport> {
     }
   }
 
+  const enriched = await enrichPending(handle);
+
   return {
     total: owned.length,
     added,
     updated,
     sessionsRecorded,
     hoursGained: Math.round(hoursGained * 10) / 10,
+    enriched,
     ranAt: now.toISOString(),
   };
+}
+
+/**
+ * Enriches up to `MAX_ENRICH_PER_SYNC` games that have never been enriched —
+ * newly-added games from this sync plus any older backlog, oldest first.
+ * Each game is independent: one failing must not stop the rest.
+ */
+async function enrichPending(handle: Awaited<ReturnType<typeof db>>): Promise<number> {
+  const pending = await handle
+    .select({
+      id: games.id,
+      title: games.title,
+      source: games.source,
+      sourceId: games.sourceId,
+    })
+    .from(games)
+    .where(isNull(games.enrichedAt))
+    .orderBy(games.firstSeenAt)
+    .limit(MAX_ENRICH_PER_SYNC);
+
+  let enriched = 0;
+
+  for (const g of pending) {
+    try {
+      const result = await enrichGame({
+        title: g.title,
+        source: g.source as "steam" | "manual",
+        sourceId: g.sourceId,
+      });
+
+      await handle
+        .update(games)
+        .set({ ...result, enrichedAt: new Date() })
+        .where(eq(games.id, g.id));
+
+      enriched++;
+    } catch {
+      // Leaves enrichedAt null so this game is retried next sync, unlike a
+      // clean miss (which enrichGame reports as nulls, not a throw).
+    }
+  }
+
+  return enriched;
 }
 
 /** Deletes a game and everything hanging off it. Used when unowned. */

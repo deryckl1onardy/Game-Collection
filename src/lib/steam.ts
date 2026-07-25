@@ -94,6 +94,106 @@ export async function fetchOwnedGamesRaw(): Promise<OwnedGame[]> {
   return body.response?.games ?? [];
 }
 
+type AppDetailsResponse = Record<
+  string,
+  {
+    success: boolean;
+    data?: {
+      short_description?: string;
+      genres?: { description: string }[];
+      screenshots?: { path_full: string }[];
+    };
+  }
+>;
+
+export type SteamAppDetails = {
+  description: string | null;
+  genres: string[];
+  screenshots: string[];
+};
+
+/**
+ * Store metadata for a Steam game — description, genres, screenshots.
+ *
+ * Keyed by appid, so unlike the RAWG title search this can never match the
+ * wrong game (ADR-0008, extended by ADR-0010 to cover description and
+ * screenshots too). `store.steampowered.com/api/appdetails` is undocumented
+ * and unofficial and can change without notice; a failure here just leaves
+ * the enrichment fields null, same as any RAWG/HLTB miss.
+ */
+export async function fetchSteamAppDetails(appid: number): Promise<SteamAppDetails | null> {
+  try {
+    const url = new URL("https://store.steampowered.com/api/appdetails");
+    url.searchParams.set("appids", String(appid));
+    url.searchParams.set("filters", "short_description,genres,screenshots");
+
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+
+    const body = (await res.json()) as AppDetailsResponse;
+    const entry = body[String(appid)];
+    if (!entry?.success || !entry.data) return null;
+
+    return {
+      description: entry.data.short_description?.trim() || null,
+      genres: (entry.data.genres ?? []).map((g) => g.description),
+      screenshots: (entry.data.screenshots ?? []).map((s) => s.path_full),
+    };
+  } catch {
+    return null;
+  }
+}
+
+type QueryFilesResponse = {
+  response?: {
+    publishedfiledetails?: { publishedfileid: string; title: string }[];
+  };
+};
+
+/**
+ * Best-effort lookup of the single highest-voted Community guide for a game,
+ * via the IPublishedFileService/QueryFiles Steamworks endpoint (reuses the
+ * same STEAM_API_KEY already required for library sync).
+ *
+ * Unverified (ADR-0011): `filetype=9` (web guide) and `query_type=0` (ranked
+ * by vote) are recalled from the EWorkshopFileType/EPublishedFileQueryType
+ * enums, not confirmed against a live response in this environment — Valve
+ * does not document the numeric values. Wrong values here just come back as
+ * an empty result, not an error, so this degrades to null exactly like a
+ * genuine no-guide-exists case. `steamGuidesUrl` above is the fallback that
+ * works regardless.
+ */
+export async function fetchTopSteamGuide(
+  appid: number,
+): Promise<{ url: string; title: string } | null> {
+  const key = process.env.STEAM_API_KEY;
+  if (!key) return null;
+
+  try {
+    const url = new URL(`${API}/IPublishedFileService/QueryFiles/v1/`);
+    url.searchParams.set("key", key);
+    url.searchParams.set("appid", String(appid));
+    url.searchParams.set("query_type", "0"); // k_PublishedFileQueryType_RankedByVote
+    url.searchParams.set("filetype", "9"); // k_EWorkshopFileTypeWebGuide
+    url.searchParams.set("numperpage", "1");
+    url.searchParams.set("return_vote_data", "false");
+
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+
+    const body = (await res.json()) as QueryFilesResponse;
+    const top = body.response?.publishedfiledetails?.[0];
+    if (!top) return null;
+
+    return {
+      url: `https://steamcommunity.com/sharedfiles/filedetails/?id=${top.publishedfileid}`,
+      title: top.title,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Live-fetch mapping, used only when no database is configured. */
 export async function fetchOwnedGames(): Promise<Game[]> {
   const games = await fetchOwnedGamesRaw();

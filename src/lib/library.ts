@@ -58,6 +58,15 @@ function toGame(row: Row, stamps?: string[], importedAt?: number): Game {
         : "never launched"),
     stamps,
     coverPath: game.coverPath,
+    description: game.description,
+    screenshots: game.screenshots ?? [],
+    platformsAvailable: game.platformsAvailable ?? [],
+    storesAvailable: game.storesAvailable ?? [],
+    topGuideUrl: game.topGuideUrl,
+    topGuideTitle: game.topGuideTitle,
+    hltbMainHours: game.hltbMainHours,
+    hltbMainExtraHours: game.hltbMainExtraHours,
+    hltbCompletionistHours: game.hltbCompletionistHours,
   };
 }
 

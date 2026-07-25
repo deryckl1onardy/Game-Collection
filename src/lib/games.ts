@@ -39,7 +39,36 @@ export type Game = {
   stamps?: string[];
   /** Cover served from our own origin. Null falls back to generated art. */
   coverPath?: string | null;
+
+  /** Enrichment (ADR-0010) — null/empty until the sync backfill reaches it. */
+  description?: string | null;
+  screenshots?: string[];
+  /** Every platform the game is on. Cross-reference against `platform` to
+   * see which one this copy is actually from. */
+  platformsAvailable?: string[];
+  storesAvailable?: string[];
+  /** Best-effort (ADR-0011); null means nothing found, not an error. */
+  topGuideUrl?: string | null;
+  topGuideTitle?: string | null;
+  hltbMainHours?: number | null;
+  hltbMainExtraHours?: number | null;
+  hltbCompletionistHours?: number | null;
 };
+
+/**
+ * Guaranteed-correct link to a game's Steam Community guides, sorted so it's
+ * curated by community vote rather than a raw unsorted list. Shown
+ * regardless of whether the best-effort `topGuideUrl` auto-fetch found
+ * anything (ADR-0011).
+ */
+export function steamGuidesUrl(appid: string) {
+  return `https://steamcommunity.com/app/${appid}/guides/?browsefilter=toprated`;
+}
+
+/** Always-correct fallback — HowLongToBeat's own search page for the title. */
+export function hltbSearchUrl(title: string) {
+  return `https://howlongtobeat.com/?q=${encodeURIComponent(title)}`;
+}
 
 export function shelfState(g: Game): ShelfState {
   if (g.finished) return "finished";

@@ -37,6 +37,41 @@ export const games = pgTable(
     coverPath: text("cover_path"),
 
     /**
+     * Enrichment (ADR-0010): description, screenshots, genres, and
+     * cross-platform availability, fetched once per game and cached here.
+     *
+     * Steam games source description/screenshots/genres from Steam's own
+     * `appdetails` (appid-keyed, no fuzzy matching); manual games fall back to
+     * RAWG, searched by title. `platformsAvailable`/`storesAvailable` always
+     * come from RAWG, since Steam's API has no notion of other storefronts.
+     */
+    description: text("description"),
+    screenshots: text("screenshots").array().notNull().default([]),
+    platformsAvailable: text("platforms_available").array().notNull().default([]),
+    storesAvailable: text("stores_available").array().notNull().default([]),
+
+    /**
+     * Guides and completion time (ADR-0011): best-effort, from unofficial
+     * endpoints that can silently return nothing or change shape without
+     * notice. Null means "nothing found or not attempted", never an error —
+     * the UI always has a guaranteed-correct search-link fallback regardless
+     * of whether these populated.
+     */
+    topGuideUrl: text("top_guide_url"),
+    topGuideTitle: text("top_guide_title"),
+    hltbMainHours: real("hltb_main_hours"),
+    hltbMainExtraHours: real("hltb_main_extra_hours"),
+    hltbCompletionistHours: real("hltb_completionist_hours"),
+
+    /**
+     * Set once enrichment has been attempted, success or not, so a title
+     * RAWG/HLTB can't match doesn't get re-queried every sync. Backfilled
+     * gradually for pre-existing games (see MAX_ENRICH_PER_SYNC in sync.ts)
+     * rather than all at once, to stay inside the sync route's time budget.
+     */
+    enrichedAt: timestamp("enriched_at"),
+
+    /**
      * When this game first appeared in a sync.
      *
      * Steam does not expose a purchase date, so this is the honest answer to
