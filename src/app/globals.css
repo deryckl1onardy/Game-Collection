@@ -348,6 +348,49 @@ select.field option {
   animation: rise 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
+/* ── View transitions ─────────────────────────────────────────────────── */
+
+/**
+ * A case picked off the shelf travels to the detail hero rather than the
+ * page cutting (ADR-0014). Slightly slower than a UI-standard morph and
+ * eased like something with mass, because the thing moving is meant to read
+ * as an object being lifted, not a card animating.
+ *
+ * The blur mid-flight hides the pixel interpolation between two different
+ * renderings of the same case.
+ */
+::view-transition-group(.morph) {
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(0.34, 0.03, 0.16, 1);
+}
+::view-transition-image-pair(.morph) {
+  animation-name: morph-blur;
+  animation-duration: 520ms;
+}
+@keyframes morph-blur {
+  35% {
+    filter: blur(2.5px);
+  }
+}
+
+/* Everything that isn't the case just crossfades, quickly, underneath it. */
+::view-transition-old(root) {
+  animation: 160ms ease-in both fade-out;
+}
+::view-transition-new(root) {
+  animation: 260ms ease-out 110ms both fade-in;
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -355,5 +398,14 @@ select.field option {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+
+  /* Positional travel is the main motion-sensitivity trigger; drop the
+     transition entirely and let the browser swap. */
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

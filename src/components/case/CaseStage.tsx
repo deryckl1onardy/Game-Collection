@@ -12,13 +12,19 @@ import { StudioEnvironment } from "./StudioEnvironment";
  * Only ever mounted on a game detail view — the library grid renders flat cover
  * images and no Canvas at all, so browsing 100+ games stays fast.
  */
-export function CaseStage(props: GameCaseProps) {
+export function CaseStage({
+  onReady,
+  ...props
+}: GameCaseProps & { onReady?: () => void }) {
   return (
     <Canvas
       shadows
       dpr={[1, 2]}
       camera={{ position: [0, 0.3, 7], fov: 32 }}
       gl={{ antialias: true }}
+      // Fires once the renderer exists, which is the cue to crossfade this
+      // over the flat stand-in the view transition landed on (ADR-0014).
+      onCreated={() => onReady?.()}
       // Drag-to-rotate misbehaves on touch devices without this, and
       // @use-gesture warns about it explicitly.
       style={{ touchAction: "none" }}

@@ -22,16 +22,30 @@ export function CaseCover({
   coverPath,
   sealed = false,
   className = "",
+  aspectRatio,
+  still = false,
 }: {
   title: string;
   coverPath?: string | null;
   sealed?: boolean;
   className?: string;
+  /**
+   * Overrides the default 2:3 box. The detail hero passes the real 3D case
+   * proportions so the flat stand-in lines up with the WebGL case it hands
+   * off to (ADR-0014).
+   */
+  aspectRatio?: string;
+  /** Suppresses hover motion — wrong for a hero that isn't a link. */
+  still?: boolean;
 }) {
   return (
     <div className={`group/case [perspective:1600px] ${className}`}>
       <div
-        className="relative aspect-[2/3] origin-bottom rounded-[3px] transition-transform duration-500 [transform-style:preserve-3d] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover/case:[transform:rotateY(-9deg)_rotateX(2deg)_translateY(-7px)]"
+        className={`relative aspect-[2/3] origin-bottom rounded-[3px] transition-transform duration-500 [transform-style:preserve-3d] ease-[cubic-bezier(0.22,0.61,0.36,1)] ${
+          still
+            ? ""
+            : "group-hover/case:[transform:rotateY(-9deg)_rotateX(2deg)_translateY(-7px)]"
+        }`}
         style={{
           // Dark moulded plastic showing at the edges of the shell.
           background: "#0a0907",
@@ -40,6 +54,7 @@ export function CaseCover({
             "0 16px 28px -10px rgba(0,0,0,0.9)",
             "inset 0 0 0 1px rgba(239,231,214,0.09)",
           ].join(","),
+          ...(aspectRatio ? { aspectRatio } : {}),
         }}
       >
         {/* cover art, inset so the plastic rim reads around it */}

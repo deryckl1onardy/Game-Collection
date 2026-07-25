@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useState, ViewTransition } from "react";
 import Link from "next/link";
 
 import { CaseCover } from "@/components/library/CaseCover";
 import { type Game, type ShelfState, shelfState } from "@/lib/games";
+import { rememberShelfScroll, takeShelfScroll } from "@/lib/shelf-history";
 
 type Sort = "title" | "playtime" | "recent";
 
@@ -73,6 +74,17 @@ export function LibraryBrowser({
   const [sort, setSort] = useState<Sort>("title");
   const [limit, setLimit] = useState(60);
   const [allSubjects, setAllSubjects] = useState(false);
+
+  /**
+   * Put the shelf back where it was when a case was picked off it. Layout
+   * effect rather than effect: this has to land before paint, so the case is
+   * already on screen when the browser captures the incoming state for the
+   * return morph (ADR-0014).
+   */
+  useLayoutEffect(() => {
+    const y = takeShelfScroll();
+    if (y !== null) window.scrollTo(0, y);
+  }, []);
 
   const platforms = useMemo(
     () => [...new Set(games.map((g) => g.platform))].sort(),
@@ -237,12 +249,20 @@ export function LibraryBrowser({
                     // Capped so a large library still finishes settling quickly.
                     style={{ animationDelay: `${Math.min(i, 23) * 28}ms` }}
                   >
-                    <Link href={`/game/${g.id}`} className="group/item block">
-                      <CaseCover
-                        title={g.title}
-                        coverPath={g.coverPath}
-                        sealed={s === "unopened"}
-                      />
+                    <Link
+                      href={`/game/${g.id}`}
+                      className="group/item block"
+                      onClick={rememberShelfScroll}
+                    >
+                      {/* Names this case so it morphs into the detail hero
+                          rather than the page cutting (ADR-0014). */}
+                      <ViewTransition name={`case-${g.id}`} share="morph">
+                        <CaseCover
+                          title={g.title}
+                          coverPath={g.coverPath}
+                          sealed={s === "unopened"}
+                        />
+                      </ViewTransition>
                       <div className="mt-3.5 px-0.5">
                         <p className="truncate font-display text-[15px] leading-tight text-paper-dim transition-colors duration-200 group-hover/item:text-paper">
                           {g.title}

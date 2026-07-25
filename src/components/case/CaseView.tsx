@@ -1,13 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState, ViewTransition } from "react";
 import dynamic from "next/dynamic";
 import * as THREE from "three";
 
+import { CaseCover } from "@/components/library/CaseCover";
 import { type Game, shelfState } from "@/lib/games";
+import { BackToShelf } from "./BackToShelf";
 import { GameDetails } from "./GameDetails";
 import { GameEditor } from "./GameEditor";
+
+/**
+ * Where the WebGL case actually lands on screen, derived rather than eyeballed
+ * so the flat stand-in it hands off to lines up exactly.
+ *
+ * Panel is W 1.86 × H 2.62 (case-geometry.ts), centred at the origin, viewed
+ * by a fov-32 camera 7 units back — so ~6.87 to the front face. Visible height
+ * there is 2·6.87·tan(16°) ≈ 3.94 units, putting the case at 2.62/3.94 ≈ 66.3%
+ * of viewport height, and its width at 66.3vh × (1.86/2.62).
+ */
+const CASE_H_VH = 66.3;
+const CASE_W_VH = CASE_H_VH * (1.86 / 2.62);
 
 const CaseStage = dynamic(() => import("./CaseStage").then((m) => m.CaseStage), {
   ssr: false,
@@ -75,6 +88,7 @@ function useCoverTexture(coverPath?: string | null) {
 
 export function CaseView({ game }: { game: Game }) {
   const [open, setOpen] = useState(false);
+  const [stageReady, setStageReady] = useState(false);
   const cover = useCoverTexture(game.coverPath);
 
   const state = shelfState(game);
@@ -86,7 +100,30 @@ export function CaseView({ game }: { game: Game }) {
           rather than the whole page being locked to one screen like before
           enrichment data needed somewhere to live. */}
       <div className="relative h-screen">
-        <div className="absolute inset-0">
+        {/*
+          The flat case the morph from the shelf lands on. It is never faded
+          out — the WebGL canvas is opaque and simply covers it once ready, so
+          it is still there, in place, to morph *back* to the shelf on the
+          return navigation (ADR-0014).
+        */}
+        <div className="pointer-events-none absolute inset-0 grid place-items-center">
+          <div style={{ width: `${CASE_W_VH}vh` }}>
+            <ViewTransition name={`case-${game.id}`} share="morph">
+              <CaseCover
+                title={game.title}
+                coverPath={game.coverPath}
+                sealed={sealed}
+                still
+                aspectRatio="1.86 / 2.62"
+              />
+            </ViewTransition>
+          </div>
+        </div>
+
+        <div
+          className="absolute inset-0 transition-opacity duration-700 ease-out"
+          style={{ opacity: stageReady ? 1 : 0 }}
+        >
           <CaseStage
             game={{
               title: game.title,
@@ -97,6 +134,7 @@ export function CaseView({ game }: { game: Game }) {
             }}
             open={open}
             coverTexture={cover}
+            onReady={() => setStageReady(true)}
           />
         </div>
 
@@ -105,12 +143,7 @@ export function CaseView({ game }: { game: Game }) {
         </div>
 
         <div className="pointer-events-none absolute left-6 top-7 max-w-[22rem] sm:left-10">
-          <Link
-            href="/library"
-            className="catalog pointer-events-auto inline-block text-paper-ghost transition-colors hover:text-amber"
-          >
-            ← the shelf
-          </Link>
+          <BackToShelf className="catalog pointer-events-auto inline-block text-paper-ghost transition-colors hover:text-amber" />
 
           <div className="mt-8">
             <span

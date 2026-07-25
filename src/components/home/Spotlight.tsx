@@ -1,3 +1,4 @@
+import { ViewTransition } from "react";
 import Link from "next/link";
 
 import { CaseCover } from "@/components/library/CaseCover";
@@ -10,7 +11,9 @@ export function ContinueCard({ game }: { game: Game }) {
 
   return (
     <Link href={`/game/${game.id}`} className="group/item block">
-      <CaseCover title={game.title} coverPath={game.coverPath} />
+      <ViewTransition name={`case-${game.id}`} share="morph">
+        <CaseCover title={game.title} coverPath={game.coverPath} />
+      </ViewTransition>
       <div className="mt-3.5">
         <p className="truncate font-display text-[15px] leading-tight text-paper-dim transition-colors group-hover/item:text-paper">
           {game.title}
@@ -36,7 +39,9 @@ export function SealedPick({ game }: { game: Game }) {
       href={`/game/${game.id}`}
       className="group/pick grid grid-cols-[minmax(0,9rem)_1fr] items-center gap-8 sm:grid-cols-[minmax(0,13rem)_1fr] sm:gap-12"
     >
-      <CaseCover title={game.title} coverPath={game.coverPath} sealed />
+      <ViewTransition name={`case-${game.id}`} share="morph">
+        <CaseCover title={game.title} coverPath={game.coverPath} sealed />
+      </ViewTransition>
 
       <div className="min-w-0">
         <span className="stamp inline-block rotate-[-2.5deg] px-2.5 py-1 text-[10px]">
