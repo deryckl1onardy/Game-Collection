@@ -93,6 +93,56 @@ export async function getLibrary(): Promise<Game[]> {
   return rows.map((r) => toGame(r, undefined, importedAt));
 }
 
+/**
+ * Applies the owner's own annotations to a game (ADR-0006).
+ *
+ * `finishedAt` is set the first time `finished` flips true and held after
+ * that, rather than being passed in directly — the caller only ever knows
+ * the checkbox state, not when it last changed.
+ */
+export async function updateUserGame(
+  gameId: string,
+  patch: {
+    finished: boolean;
+    note: string;
+    tags: string[];
+    manualPlaytime: number | null;
+  },
+) {
+  await ensureMigrated();
+  const handle = await db();
+
+  const [existing] = await handle
+    .select({ finishedAt: userGames.finishedAt })
+    .from(userGames)
+    .where(eq(userGames.gameId, gameId))
+    .limit(1);
+
+  const finishedAt = patch.finished ? (existing?.finishedAt ?? new Date()) : null;
+  const note = patch.note.trim() || null;
+
+  await handle
+    .insert(userGames)
+    .values({
+      gameId,
+      finished: patch.finished,
+      finishedAt,
+      note,
+      tags: patch.tags,
+      manualPlaytime: patch.manualPlaytime,
+    })
+    .onConflictDoUpdate({
+      target: userGames.gameId,
+      set: {
+        finished: patch.finished,
+        finishedAt,
+        note,
+        tags: patch.tags,
+        manualPlaytime: patch.manualPlaytime,
+      },
+    });
+}
+
 /** One game, with its stamps — the library card is read straight off sessions. */
 export async function getGame(id: string): Promise<Game | null> {
   await ensureMigrated();

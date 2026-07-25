@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CaseCover } from "@/components/library/CaseCover";
+import { Cover } from "@/components/library/Cover";
 import type { Game } from "@/lib/games";
 import { agoLabel, daysSincePlayed } from "@/lib/spotlight";
 

@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import * as THREE from "three";
 
 import { type Game, shelfState } from "@/lib/games";
+import { GameEditor } from "./GameEditor";
 
 const CaseStage = dynamic(() => import("./CaseStage").then((m) => m.CaseStage), {
   ssr: false,
@@ -86,6 +87,10 @@ export function CaseView({ game }: { game: Game }) {
           open={open}
           coverTexture={cover}
         />
+      </div>
+
+      <div className="pointer-events-none absolute right-6 top-6">
+        <GameEditor game={game} />
       </div>
 
       <div className="pointer-events-none absolute left-6 top-6 max-w-[320px]">
