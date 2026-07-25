@@ -131,19 +131,29 @@ export const sessions = pgTable(
 );
 
 /**
- * Steam credentials, connected through the UI (ADR-0012) instead of hand-
- * edited into `.env.local`. Single row, fixed id — this app is genuinely
- * single-user (ADR-0003), so there is never a second connection to store.
+ * Steam connection, made through the UI (ADR-0012) instead of hand-edited
+ * into `.env.local`. Single row, fixed id — this app is genuinely single-user
+ * (ADR-0003), so there is never a second connection to store.
+ *
+ * Two modes (ADR-0013):
+ * - `public-profile`: `apiKey` is null. Sync reads the free, unauthenticated
+ *   community games-list feed — no key ever collected. Only works if the
+ *   profile's "Game details" privacy is Public, and the feed itself is a
+ *   deprecated Valve legacy endpoint that could stop working without notice.
+ * - `api-key`: the fallback for a private profile, or if the public feed
+ *   breaks. Steam has no scoped-token flow, so this is a real Web API key
+ *   the owner generated and pasted in by hand.
  *
  * `STEAM_API_KEY`/`STEAM_ID` env vars still work and take priority when set
- * (see resolveSteamCredentials in steam.ts) — the natural choice for a
+ * (see resolveSteamConnection in steam.ts) — the natural choice for a
  * deployed Vercel Cron run, which has no browser to click through a sign-in
  * flow with.
  */
 export const steamConnection = pgTable("steam_connection", {
   id: text("id").primaryKey(),
   steamId: text("steam_id").notNull(),
-  apiKey: text("api_key").notNull(),
+  mode: text("mode").notNull(), // 'public-profile' | 'api-key'
+  apiKey: text("api_key"),
   connectedAt: timestamp("connected_at").notNull().defaultNow(),
 });
 

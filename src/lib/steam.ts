@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Game } from "./games";
+import { fetchPublicOwnedGames } from "./steam-public-profile";
 import { getStoredSteamConnection } from "./steam-connection";
 
 /**
@@ -24,39 +25,34 @@ export type OwnedGame = {
 export class SteamConfigError extends Error {}
 export class SteamApiError extends Error {}
 
+export type SteamConnection =
+  | { mode: "public-profile"; steamId: string }
+  | { mode: "api-key"; key: string; steamId: string };
+
 /**
- * Credentials come from `STEAM_API_KEY`/`STEAM_ID` env vars if set, else the
- * database row saved by the "connect Steam" flow (ADR-0012). Env vars win —
- * they're the natural choice for a deployed Vercel Cron run, which has no
- * browser to click through a sign-in flow with, and letting them override
- * means a deploy-time override always wins over whatever was clicked
- * through the UI.
+ * The connection comes from `STEAM_API_KEY`/`STEAM_ID` env vars if both are
+ * set, else the database row saved by the "connect Steam" flow (ADR-0012,
+ * ADR-0013). Env vars win — they're the natural choice for a deployed
+ * Vercel Cron run, which has no browser to click through a sign-in flow
+ * with, so a deploy-time override always beats whatever was clicked
+ * through the UI. An env-var connection is always api-key mode; the
+ * public-profile mode only exists as something the UI can save.
  */
-export async function resolveSteamCredentials(): Promise<
-  { key: string; steamId: string } | null
-> {
+export async function resolveSteamConnection(): Promise<SteamConnection | null> {
   const envKey = process.env.STEAM_API_KEY;
   const envSteamId = process.env.STEAM_ID;
-  if (envKey && envSteamId) return { key: envKey, steamId: envSteamId };
+  if (envKey && envSteamId) return { mode: "api-key", key: envKey, steamId: envSteamId };
 
   const stored = await getStoredSteamConnection();
-  if (stored) return { key: stored.apiKey, steamId: stored.steamId };
+  if (!stored) return null;
 
-  return null;
-}
-
-async function config() {
-  const creds = await resolveSteamCredentials();
-  if (!creds) {
-    throw new SteamConfigError(
-      "Steam isn't connected — sign in or set STEAM_API_KEY/STEAM_ID in .env.local",
-    );
-  }
-  return creds;
+  return stored.mode === "api-key"
+    ? { mode: "api-key", key: stored.apiKey, steamId: stored.steamId }
+    : { mode: "public-profile", steamId: stored.steamId };
 }
 
 export async function steamIsConfigured() {
-  return (await resolveSteamCredentials()) !== null;
+  return (await resolveSteamConnection()) !== null;
 }
 
 /**
@@ -97,6 +93,27 @@ export async function validateSteamCredentials(
   }
 }
 
+/**
+ * Tests the free public-profile feed for a SteamID (ADR-0013), so the
+ * connect flow can show "found N games" before saving anything — or a clear
+ * "your profile is private" message instead of silently connecting to a
+ * source that will return nothing on the next sync.
+ */
+export async function probePublicProfile(
+  steamId: string,
+): Promise<{ ok: true; gameCount: number } | { ok: false; error: string }> {
+  const games = await fetchPublicOwnedGames(steamId);
+  if (games === null) {
+    return {
+      ok: false,
+      error:
+        "Couldn't read a public games list for this account — your profile's " +
+        "\"Game details\" privacy is probably not set to Public.",
+    };
+  }
+  return { ok: true, gameCount: games.length };
+}
+
 const MONTHS = [
   "jan", "feb", "mar", "apr", "may", "jun",
   "jul", "aug", "sep", "oct", "nov", "dec",
@@ -120,15 +137,36 @@ function coverPath(appid: number) {
 }
 
 /**
- * A player's owned games.
+ * A player's owned games — from the official Web API in api-key mode, or
+ * the free public feed in public-profile mode (ADR-0013).
  *
- * Returns an empty list when the profile's game details are not public —
- * Steam reports this as success with no games rather than an error, which is
- * why the caller is told to check privacy settings.
+ * In api-key mode, returns an empty list when the profile's game details
+ * are not public and the key isn't the account's own — Steam reports that
+ * as success with no games rather than an error, which is why the caller is
+ * told to check privacy settings. In public-profile mode a private profile
+ * throws instead, since there's no ambiguity to preserve: the feed simply
+ * has no anonymous door for a private profile at all.
  */
 export async function fetchOwnedGamesRaw(): Promise<OwnedGame[]> {
-  const { key, steamId } = await config();
+  const connection = await resolveSteamConnection();
+  if (!connection) {
+    throw new SteamConfigError(
+      "Steam isn't connected — sign in at /connect-steam or set STEAM_API_KEY/STEAM_ID.",
+    );
+  }
 
+  if (connection.mode === "public-profile") {
+    const games = await fetchPublicOwnedGames(connection.steamId);
+    if (games === null) {
+      throw new SteamApiError(
+        "Couldn't read the public games list — check that \"Game details\" is " +
+          "still set to Public, or connect with an API key instead.",
+      );
+    }
+    return games;
+  }
+
+  const { key, steamId } = connection;
   const url = new URL(`${API}/IPlayerService/GetOwnedGames/v1/`);
   url.searchParams.set("key", key);
   url.searchParams.set("steamid", steamId);
@@ -226,9 +264,11 @@ type QueryFilesResponse = {
 export async function fetchTopSteamGuide(
   appid: number,
 ): Promise<{ url: string; title: string } | null> {
-  const creds = await resolveSteamCredentials();
-  if (!creds) return null;
-  const { key } = creds;
+  const connection = await resolveSteamConnection();
+  // QueryFiles requires a real key — unavailable in public-profile mode,
+  // same as "not connected at all" from this function's point of view.
+  if (!connection || connection.mode !== "api-key") return null;
+  const { key } = connection;
 
   try {
     const url = new URL(`${API}/IPublishedFileService/QueryFiles/v1/`);
