@@ -28,8 +28,11 @@ Explicit non-goals: launching games, storefront features, social feeds.
 100+ games). Filterable by genre/tag, platform, and play status, plus search.
 Clicking a cover zooms into the tactile single-case view.
 
-**Case view.** Interactive 3D — drag to rotate, open to reveal disc + manual.
+**Case view.** Interactive 3D — orbit/pan/zoom (drag, scroll, or arrow keys +
+/− to nudge, "r" to reset the framing), open to reveal disc + manual.
 Photo-real direction (glossy plastic, real shadows), not illustrated/flat.
+Camera easing and the hinge/wrap animation both collapse to instant when the
+OS asks for reduced motion.
 
 **Homepage.** Two low-pressure surfaces above the grid:
 - *Continue where you left off* — 1–3 unfinished games, spotlight not list

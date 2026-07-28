@@ -1,10 +1,18 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { ContactShadows, PresentationControls } from "@react-three/drei";
+import { ContactShadows } from "@react-three/drei";
 
+import { CaseControls } from "./CaseControls";
 import { GameCase, type GameCaseProps } from "./GameCase";
 import { StudioEnvironment } from "./StudioEnvironment";
+
+export type CaseStageProps = GameCaseProps & {
+  /** Disables control-related easing/inertia when the OS asks for less motion. */
+  reducedMotion?: boolean;
+  /** Bump to snap the camera back to its default framing. */
+  resetToken?: number;
+};
 
 /**
  * The WebGL surface for a single case.
@@ -12,7 +20,7 @@ import { StudioEnvironment } from "./StudioEnvironment";
  * Only ever mounted on a game detail view — the library grid renders flat cover
  * images and no Canvas at all, so browsing 100+ games stays fast.
  */
-export function CaseStage(props: GameCaseProps) {
+export function CaseStage({ reducedMotion = false, resetToken = 0, ...props }: CaseStageProps) {
   return (
     <Canvas
       shadows
@@ -40,16 +48,9 @@ export function CaseStage(props: GameCaseProps) {
       <directionalLight position={[-4.5, 1, -2.2]} intensity={0.7} color="#9dc4ff" />
       <ambientLight intensity={0.35} color="#8e8d86" />
 
-      <PresentationControls
-        global
-        snap
-        cursor
-        speed={1.2}
-        polar={[-0.7, 0.7]}
-        azimuth={[-Math.PI, Math.PI]}
-      >
-        <GameCase {...props} />
-      </PresentationControls>
+      <GameCase {...props} reducedMotion={reducedMotion} />
+
+      <CaseControls reducedMotion={reducedMotion} resetToken={resetToken} />
 
       <ContactShadows
         position={[0, -1.62, 0]}

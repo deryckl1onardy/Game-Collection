@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import * as THREE from "three";
 
 import { type Game, shelfState } from "@/lib/games";
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 
 const CaseStage = dynamic(() => import("./CaseStage").then((m) => m.CaseStage), {
   ssr: false,
@@ -67,7 +68,9 @@ function useCoverTexture(coverPath?: string | null) {
 
 export function CaseView({ game }: { game: Game }) {
   const [open, setOpen] = useState(false);
+  const [resetToken, setResetToken] = useState(0);
   const cover = useCoverTexture(game.coverPath);
+  const reducedMotion = usePrefersReducedMotion();
 
   const state = shelfState(game);
   const sealed = state === "unopened";
@@ -85,6 +88,8 @@ export function CaseView({ game }: { game: Game }) {
           }}
           open={open}
           coverTexture={cover}
+          reducedMotion={reducedMotion}
+          resetToken={resetToken}
         />
       </div>
 
@@ -128,8 +133,15 @@ export function CaseView({ game }: { game: Game }) {
         >
           {open ? "close case" : "open case"}
         </button>
+        <button
+          onClick={() => setResetToken((t) => t + 1)}
+          className="rounded-lg border border-white/25 px-4 py-2 text-[13px] transition hover:border-white/45 hover:bg-white/5"
+        >
+          reset view
+        </button>
         <span className="ml-auto text-xs text-[#75746e]">
-          drag to rotate{sealed && " · sealed until played"}
+          drag to orbit · scroll to zoom · arrows + / − to nudge · r to reset
+          {sealed && " · sealed until played"}
         </span>
       </div>
     </main>

@@ -25,6 +25,8 @@ export type GameCaseProps = {
   /** Inserts are optional by design so a cover-only game still looks intentional. */
   showDisc?: boolean;
   showManual?: boolean;
+  /** Snaps the wrap-fade and hinge swing instantly instead of easing them. */
+  reducedMotion?: boolean;
 };
 
 /**
@@ -39,6 +41,7 @@ export function GameCase({
   coverTexture,
   showDisc = true,
   showManual = true,
+  reducedMotion = false,
 }: GameCaseProps) {
   const { gl } = useThree();
   const maxAniso = useMemo(() => gl.capabilities.getMaxAnisotropy(), [gl]);
@@ -77,15 +80,19 @@ export function GameCase({
   );
 
   useFrame(() => {
-    // Wrap fades rather than tears (see docs/deferred-ideas.md).
-    wrapT.current += ((wrapped ? 1 : 0) - wrapT.current) * 0.1;
+    // Wrap fades rather than tears (see docs/deferred-ideas.md). Reduced
+    // motion snaps both this and the hinge swing straight to their target
+    // instead of easing.
+    const wrapLerp = reducedMotion ? 1 : 0.1;
+    wrapT.current += ((wrapped ? 1 : 0) - wrapT.current) * wrapLerp;
     if (wrapRef.current) {
       wrapRef.current.visible = wrapT.current > 0.02;
       wrapRef.current.scale.setScalar(1 + 0.02 * (1 - wrapT.current));
     }
     if (wrapMat.current) wrapMat.current.opacity = 0.16 * wrapT.current;
 
-    openT.current += ((effectiveOpen ? Math.PI * 0.8 : 0) - openT.current) * 0.085;
+    const openLerp = reducedMotion ? 1 : 0.085;
+    openT.current += ((effectiveOpen ? Math.PI * 0.8 : 0) - openT.current) * openLerp;
     if (hinge.current) hinge.current.rotation.y = openT.current;
     if (disc.current) disc.current.rotation.z += 0.0025 * openT.current;
   });
