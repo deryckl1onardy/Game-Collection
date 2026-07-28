@@ -15,15 +15,22 @@
   --ink-edge: #241f18;
   --ink-well: #0a0906;
 
-  /* Card stock, aged. */
+  /**
+   * Card stock, aged.
+   *
+   * The ramp is calibrated against `--ink`, not picked by eye: 15.7 / 8.3 /
+   * 6.2 / 4.6 : 1. `--paper-ghost` is the floor because it carries the 11px
+   * tracked mono that most of the interface is labelled in, and small type
+   * needs 4.5 to be read at all. The earlier values sat at 4.1 and 2.1.
+   */
   --paper: #efe7d6;
   --paper-dim: #b3a992;
-  --paper-faint: #7b7261;
-  --paper-ghost: #4d4739;
+  --paper-faint: #9a9080;
+  --paper-ghost: #837a69;
 
   /* Pigments. Aged varnish, oxidised copper, faded indigo. */
   --amber: #d9963f;
-  --amber-deep: #8a6329;
+  --amber-deep: #a87c3c;
   --verdigris: #7fa891;
   --dusk: #7c9ab8;
   --rust: #c4694e;
@@ -39,10 +46,28 @@
   --bevel: rgba(239, 231, 214, 0.07);
   --float: rgba(20, 18, 13, 0.97);
   --glow: rgba(217, 150, 63, 0.09);
-  --plank-1: #33291b;
-  --plank-2: #241d13;
-  --plank-3: #14100a;
-  --plank-4: #0b0906;
+
+  /**
+   * Where a case stands relative to the room's light: -1 at the left wall, 0
+   * directly under it, +1 at the right. Written per cell by `useRoomLight`.
+   * The default here lights a lone case head-on, which is what the detail hero
+   * wants — it has no row to belong to.
+   */
+  --lx: 0;
+
+  /**
+   * Shelf timber.
+   *
+   * These were four steps of near-black and measured 1.35 / 1.16 / 1.02 / 1.03
+   * against the room — the board the whole metaphor rests on was invisible at
+   * night, which is why the cases read as floating. Lifted into actual timber
+   * with a real tonal range from lit top surface down to the shadowed front
+   * edge.
+   */
+  --plank-1: #6b563a;
+  --plank-2: #4a3b26;
+  --plank-3: #30261a;
+  --plank-4: #1c1610;
   --grain-blend: overlay;
   --grain-opacity: 0.045;
 }
@@ -61,16 +86,22 @@
   --ink-edge: #d5cab1;
   --ink-well: #dcd2bb;
 
+  /**
+   * Daylight inverts the ramp's direction but holds the same contrast steps:
+   * 12.9 / 8.0 / 6.4 / 4.6 : 1. Every pigment here also had to come down —
+   * against cream they were reading at 2.1–4.4, which is fine for a dot and
+   * far too weak for the label text they actually carry.
+   */
   --paper: #221d15;
   --paper-dim: #463f33;
-  --paper-faint: #635a49;
-  --paper-ghost: #7a7160;
+  --paper-faint: #554d3e;
+  --paper-ghost: #6b6250;
 
-  --amber: #9c6216;
-  --amber-deep: #c3945a;
-  --verdigris: #47755e;
-  --dusk: #46698c;
-  --rust: #a3422a;
+  --amber: #85520f;
+  --amber-deep: #7d5420;
+  --verdigris: #3d6650;
+  --dusk: #3f5f80;
+  --rust: #8f3925;
 
   --rule: rgba(34, 29, 21, 0.16);
   --rule-strong: rgba(34, 29, 21, 0.3);
@@ -81,11 +112,16 @@
   --float: rgba(245, 240, 229, 0.975);
   --glow: rgba(156, 98, 22, 0.07);
 
-  /* A shelf in a lit room is mid-tone timber, not a silhouette. */
-  --plank-1: #b39a76;
-  --plank-2: #9a7f5c;
-  --plank-3: #7c6346;
-  --plank-4: #5f4a34;
+  /**
+   * A shelf in a lit room is mid-tone timber, not a silhouette — and it is
+   * darker than the wall behind it, never lighter. Lifting the top surface
+   * toward cream put it at 1.55:1 against the room and the board vanished
+   * again, the same failure as the night theme but from the other direction.
+   */
+  --plank-1: #9c7f57;
+  --plank-2: #85683f;
+  --plank-3: #6a5232;
+  --plank-4: #4e3a24;
 
   /* Overlay grain blows out on a pale ground; multiply keeps it as tooth. */
   --grain-blend: multiply;
@@ -200,31 +236,143 @@ body::before {
 /* ── The shelf ────────────────────────────────────────────────────────── */
 
 /**
+ * Everything a case derives from where it stands in the room.
+ *
+ * All five cues come off the single `--lx` written by `useRoomLight`, so they
+ * can never disagree with each other — the highlight, the lit edge, the shadow
+ * and the turn all describe one light in one place.
+ */
+.case {
+  /* The highlight swings from upper-right at the left wall, through dead top
+     for a case standing under the light, to upper-left at the right wall. */
+  --gloss-angle: calc(180deg - var(--lx) * 62deg);
+
+  /* The spine faces left, so it only catches the light once the case is right
+     of centre. The opening edge faces right and does exactly the opposite. */
+  --spine-light: calc(0.1 + max(var(--lx), 0) * 0.4);
+  --edge-light: calc(0.07 + max(calc(-1 * var(--lx)), 0) * 0.32);
+
+  /* A shadow falls away from the light, never straight down. */
+  --shadow-shift: calc(var(--lx) * 9px);
+
+  /* Cases toward the walls turn their faces back toward the middle of the
+     room. Pivoting at the base, because a case on a shelf leans from where it
+     touches, not from its centre. */
+  --turn: calc(var(--lx) * -3.4deg);
+
+  transform: perspective(1400px) rotateY(var(--turn));
+  transform-origin: 50% 100%;
+}
+
+/* A container, so the printing on the box scales with the box. */
+.case-body {
+  container-type: inline-size;
+}
+
+/**
  * A plank under a grid cell, bleeding past it by half the column gap so
  * neighbouring cells butt into one continuous shelf across the row. Pure
  * CSS — no row-chunking in JS, so it survives any breakpoint.
+ *
+ * The plank wraps the case ALONE, never the case plus its label. Wrapping the
+ * whole cell put the caption in the 67px between the case and the timber, so
+ * every case floated above a shelf it was supposed to be standing on and cast
+ * its contact shadow onto empty air. The label belongs below the plank — where
+ * a shelf-edge label actually goes.
  */
 .shelf-plank {
   position: relative;
+  /* Real occupied space, not an overlay: whatever is in the cell now rests on
+     the plank instead of being covered by its top 9px. */
+  padding-bottom: 13px;
 }
+
+/**
+ * The platform's printed band, across the top of the sleeve.
+ *
+ * A real case carries its platform on the box, over the artwork — it is why you
+ * can pick a PlayStation case out of a shelf from across a room. Printing it as
+ * a caption underneath instead threw away the one piece of identity the object
+ * already had.
+ *
+ * Sized in container units so the printing scales with the box: the same band
+ * on a thumbnail and on the detail hero, not a fixed 10px label that looks
+ * glued on at one size and lost at the other.
+ */
+.platform-band {
+  flex: 0 0 auto;
+  height: 8.5%;
+  min-height: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 5%;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: max(6px, 5.2cqw);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  /* The seam where the printed band meets the artwork below it. */
+  box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.22);
+}
+
+/**
+ * A platform's icon printed on the band, in place of its wordmark.
+ *
+ * `mask-image` rather than an `<img>`: the icon is meant to print in the
+ * band's ink colour like everything else on the sleeve, not carry its own
+ * fixed colour, so `background-color` (set to `liv.ink` inline) is what
+ * actually paints it — the SVG only supplies the shape.
+ */
+.platform-band-icon {
+  width: clamp(18px, 152%, 32px);
+  height: clamp(18px, 152%, 32px);
+  flex-shrink: 0;
+  flex-grow: 0;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
 .shelf-plank::after {
   content: "";
   position: absolute;
   left: calc(var(--shelf-bleed) * -1);
   right: calc(var(--shelf-bleed) * -1);
   bottom: 0;
-  height: 9px;
-  border-radius: 1px;
-  background: linear-gradient(
-    180deg,
-    var(--plank-1) 0%,
-    var(--plank-2) 42%,
-    var(--plank-3) 78%,
-    var(--plank-4) 100%
-  );
+  height: 13px;
+  border-radius: 0 0 2px 2px;
+  background-image:
+    /* Grain — fine vertical striations at uneven intervals, so it reads as
+       sawn timber rather than a repeating stripe. */
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.055) 0 1px,
+      transparent 1px 6px,
+      rgba(255, 255, 255, 0.03) 6px 7px,
+      transparent 7px 11px,
+      rgba(0, 0, 0, 0.04) 11px 12px,
+      transparent 12px 19px
+    ),
+    /* Three reads, because a board seen from slightly above shows all three:
+       the lit top surface, the lip where it turns, then the front edge falling
+       away into shadow. */
+    linear-gradient(
+      180deg,
+      var(--plank-1) 0 3px,
+      var(--plank-2) 3px 6px,
+      var(--plank-3) 58%,
+      var(--plank-4) 100%
+    );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 10px 20px -8px rgba(0, 0, 0, 0.6);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    0 10px 18px -9px rgba(0, 0, 0, 0.8);
 }
 
 /* ── Paper ────────────────────────────────────────────────────────────── */
@@ -276,6 +424,37 @@ body::before {
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 1px 0 rgba(34, 29, 21, 0.16),
     0 14px 26px -12px rgba(34, 29, 21, 0.35);
+}
+
+/**
+ * The due-date card, tucked behind the case.
+ *
+ * A library book keeps its title on a card in a pocket glued inside the back
+ * cover — you only read it once you tilt the book toward you. Same trick
+ * here: the title is not printed as a caption under the case, it lives on a
+ * card that rides along with the case's own hover tilt, as if glued to it.
+ *
+ * Not `.card-stock` reused outright — that class's ruled lines repeat every
+ * 27px, tuned for the circulation card's much larger size. At this tag's
+ * actual height, one line of type, the pattern would never complete a single
+ * repeat and would read as a stray diagonal mark rather than ruled paper. Same
+ * family of tones, no ruling, and a shadow sized for a tag lifting a few
+ * millimetres off a case rather than a card lying flat on a desk.
+ */
+.title-card {
+  background: linear-gradient(180deg, #f4eddf 0%, #e4d9c1 100%);
+  color: #2a2419;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 6px 14px -6px rgba(0, 0, 0, 0.65),
+    0 1px 3px rgba(0, 0, 0, 0.45);
+}
+:root[data-theme="light"] .title-card {
+  background: linear-gradient(180deg, #fbf7ee 0%, #f0e9d9 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(34, 29, 21, 0.14),
+    0 8px 16px -8px rgba(34, 29, 21, 0.4);
 }
 
 /**
@@ -331,8 +510,19 @@ body::before {
   background: var(--amber);
   border-color: var(--amber);
 }
+/**
+ * A plate that is present but not live — unlit rather than faded.
+ *
+ * Blanket `opacity: 0.35` dropped the legend to roughly 2:1 against the room,
+ * which made "open case" on a sealed game unreadable instead of unavailable.
+ * Dropping the fill and the bevel says the same thing physically, and the
+ * legend stays legible.
+ */
 .btn:disabled {
-  opacity: 0.35;
+  color: var(--paper-faint);
+  border-color: var(--rule);
+  background-color: transparent;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -344,6 +534,105 @@ body::before {
 }
 .btn-primary:hover:not(:disabled) {
   filter: brightness(1.12);
+}
+
+/**
+ * A row label, printed plain on the page — same hand as `.catalog`, sitting
+ * inline before its own group of switches rather than heading a whole row,
+ * so a group takes only as much width as its switches need.
+ */
+.console-row-label {
+  flex: none;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-ghost);
+}
+
+/**
+ * A switch, resting loose on the page — not mounted in a panel.
+ *
+ * The plate this used to sit on was the actual problem: warm colour plus
+ * horizontal grain reads as sawn board before it reads as hardware, no
+ * matter how the gradient is tuned — three attempts at "brass" all failed
+ * the same way. So there is no plate now. Each switch is cast with its own
+ * weight instead — a real shadow on the page under it, idle in the room's
+ * own dark plastic, one lamp switched on when it's the active choice — the
+ * way switches salvaged off a broken panel would actually sit on a desk,
+ * loose, each one its own object.
+ *
+ * Idle switches use `--ink-raised`/`--ink-edge` rather than a fixed colour:
+ * unlike the lit state, an OFF switch has nothing of its own to glow with, so
+ * it is honestly just dark plastic sitting in whichever room it's in.
+ */
+.key-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.3rem 0.65rem 0.28rem;
+  border-radius: 999px;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  color: var(--paper-ghost);
+  background: linear-gradient(180deg, var(--ink-raised) 0%, var(--ink-edge) 100%);
+  box-shadow:
+    inset 0 1px 0 var(--bevel),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 5px 10px -7px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  transition:
+    transform 0.15s cubic-bezier(0.22, 0.61, 0.36, 1),
+    background 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+.key-tab:hover {
+  color: var(--paper-dim);
+  transform: translateY(-1px);
+}
+
+/* The pilot lamp. Dark glass when idle; lit amber, with an actual glow,
+   once its switch is the one that's active. */
+.key-tab::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  flex: none;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 1px 1px rgba(0, 0, 0, 0.5),
+    0 1px 0 var(--bevel);
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+}
+
+/* Fixed amber, not `var(--amber)`: this switch is lit from within like the
+   pilot lamp beside it, not painted with the room's reflected pigment —
+   `--amber` deepens for contrast in daylight, which would dim the one
+   switch that is supposed to be the brightest thing in the row. */
+.key-tab[data-active] {
+  color: #2a1b08;
+  background: linear-gradient(180deg, #f0b46a 0%, #d9963f 100%);
+  transform: translateY(-1.5px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.15),
+    0 2px 3px rgba(0, 0, 0, 0.4),
+    0 8px 14px -7px rgba(217, 150, 63, 0.5);
+}
+.key-tab[data-active]::before {
+  background: #fff6df;
+  box-shadow:
+    0 0 4px 1px rgba(255, 244, 214, 0.9),
+    0 0 9px 2px rgba(217, 150, 63, 0.6);
 }
 
 /** A form field ruled onto the page — a line to write on, not a box. */
@@ -376,6 +665,78 @@ select.field {
 select.field option {
   background: var(--ink-raised);
   color: var(--paper);
+}
+
+/**
+ * The search field, as a lamp-lit gauge sitting loose among the switches.
+ *
+ * The one field you fill in yourself, so it's the one piece of electronics
+ * in the row: a recessed glass window over an amber back-light — a VFD tube,
+ * the display a receiver or a cassette deck of this era would actually have
+ * used, not the cool grey LCD a modern device would. It rests on the page
+ * the same way the switches beside it do now — its own object, its own
+ * shadow — rather than being cut into any shared surface.
+ *
+ * The glass and its glow are fixed colours, not `--ink`/`--paper` — a tube
+ * is lit from inside, so it looks the same lit amber whether the room
+ * around it is in day or night.
+ */
+.console-readout {
+  --tube-glass: #100b07;
+  --tube-glow: #d9963f;
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 11rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: var(--tube-glass);
+  box-shadow:
+    inset 0 1.5px 4px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.1),
+    0 6px 14px -8px rgba(0, 0, 0, 0.55);
+  transition:
+    width 0.2s ease,
+    box-shadow 0.2s ease;
+}
+/* Grows to hold what you typed rather than clipping it, and lifts a little
+   further off the page — the one control here that's genuinely focused,
+   not just switched. */
+.console-readout:focus-within {
+  width: 15rem;
+  box-shadow:
+    inset 0 1.5px 4px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.1),
+    0 10px 20px -9px rgba(0, 0, 0, 0.6);
+}
+.console-readout-glyph {
+  flex: none;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: color-mix(in srgb, var(--tube-glow), #fff 55%);
+  text-shadow: 0 0 5px rgba(217, 150, 63, 0.75);
+}
+.console-readout-input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--tube-glow), #fff 45%);
+  text-shadow: 0 0 6px rgba(217, 150, 63, 0.55);
+}
+.console-readout-input::placeholder {
+  color: color-mix(in srgb, var(--tube-glow), #000 25%);
+  text-shadow: none;
 }
 
 /** The label above a ruled field. */
@@ -488,6 +849,11 @@ select.field option {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    /* The shelf staggers `.rise` with an inline per-cell delay, and `both`
+       fill holds the from-state (opacity 0) for the whole delay. Zeroing the
+       duration alone still left the grid blank for up to ~0.65s and then
+       popped it in at once — the opposite of what was asked for. */
+    animation-delay: 0ms !important;
   }
 
   /* Positional travel is the main motion-sensitivity trigger; drop the

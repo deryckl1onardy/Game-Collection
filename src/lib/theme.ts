@@ -21,6 +21,17 @@ export function currentTheme(): Theme {
 }
 
 /**
+ * The transition currently animating the room, if any.
+ *
+ * Starting a second one while the first is live aborts the first, and an
+ * aborted transition *rejects* its `ready`/`finished` promises. Nothing was
+ * attached to them, so the rejection escaped as an unhandled
+ * "InvalidStateError: Transition was aborted because of invalid state" and,
+ * worse, could leave the page stuck on a half-composited frame.
+ */
+let inFlight: { finished: Promise<void> } | null = null;
+
+/**
  * Flips the theme.
  *
  * Wrapped in a view transition so the room changes light rather than cutting
@@ -41,11 +52,25 @@ export function toggleTheme() {
     }
   };
 
-  if (typeof document.startViewTransition === "function") {
-    document.startViewTransition(apply);
-  } else {
+  // Mid-flight, or unsupported: switch outright. Interrupting a running
+  // crossfade to start another one looks worse than not animating at all.
+  if (inFlight || typeof document.startViewTransition !== "function") {
     apply();
+    return;
   }
+
+  const transition = document.startViewTransition(apply);
+  inFlight = transition;
+
+  // An abort is a normal outcome of a fast second toggle, not a fault — but
+  // both promises still have to be handled or they surface as unhandled
+  // rejections.
+  transition.ready.catch(() => {});
+  transition.finished
+    .catch(() => {})
+    .finally(() => {
+      if (inFlight === transition) inFlight = null;
+    });
 }
 
 /**

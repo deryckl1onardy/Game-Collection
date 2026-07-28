@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+import { ShelfSceneProvider } from "@/lib/shelf-scene";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 
 /**
@@ -53,7 +54,16 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      {/*
+        The 3D scene is mounted here, above the router, so that moving between
+        the shelf and a game keeps one WebGL context alive instead of
+        destroying the renderer and rebuilding it (see lib/shelf-scene.tsx).
+        The provider renders nothing at all until a route claims it, so every
+        other page is unaffected.
+      */}
+      <body className="flex min-h-full flex-col">
+        <ShelfSceneProvider>{children}</ShelfSceneProvider>
+      </body>
     </html>
   );
 }

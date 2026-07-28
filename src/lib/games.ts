@@ -76,6 +76,20 @@ export function hltbSearchUrl(title: string) {
   return `https://howlongtobeat.com/?q=${encodeURIComponent(title)}`;
 }
 
+/**
+ * The game's own wordmark, proxied through our origin, or null when there
+ * cannot be one.
+ *
+ * Derived rather than stored: for a Steam game `id` *is* the appid, so the
+ * path is knowable without a column, a migration, or a backfill. Everything
+ * hand-kept has no upstream mark to fetch, and the caller sets the title as
+ * type instead.
+ */
+export function logoPath(g: Game): string | null {
+  if (g.source !== "steam" || !/^\d+$/.test(g.id)) return null;
+  return `/api/logo/${g.id}`;
+}
+
 export function shelfState(g: Game): ShelfState {
   if (g.finished) return "finished";
   return g.playtime > 0 ? "unfinished" : "unopened";

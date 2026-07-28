@@ -15,6 +15,21 @@ export type CaseGame = {
   stamps?: string[];
 };
 
+/**
+ * Deterministic PRNG.
+ *
+ * Grain has to look random and be identical on every mount — `Math.random()`
+ * would redraw a different board each time the texture memo re-ran, and the
+ * shelf would visibly change figure mid-session.
+ */
+function seeded(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
 function canvasTexture(
   draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void,
   w: number,
@@ -173,6 +188,57 @@ export function discTexture(maxAnisotropy = 1) {
     },
     640,
     640,
+    maxAnisotropy,
+  );
+}
+
+/**
+ * The shelf the case stands on.
+ *
+ * Sawn timber seen from slightly above: fine lengthwise grain plus a few
+ * darker rays for the figure in the board. Drawn white-based with the grain in
+ * transparent browns, so the material's own `color` tints the whole thing to
+ * whichever timber the room is currently lit for — the same trick the 2D
+ * plank uses with `--plank-1`.
+ */
+export function shelfTexture(maxAnisotropy = 1) {
+  return canvasTexture(
+    (x, w, h) => {
+      const rnd = seeded(0x5e1f);
+
+      x.fillStyle = "#ffffff";
+      x.fillRect(0, 0, w, h);
+
+      // Lengthwise grain. Each line wavers slightly so none of them reads as
+      // a ruled edge across the board.
+      for (let i = 0; i < 340; i++) {
+        const y = rnd() * h;
+        x.strokeStyle = `rgba(58,40,22,${0.03 + rnd() * 0.075})`;
+        x.lineWidth = 0.5 + rnd() * 1.7;
+        x.beginPath();
+        x.moveTo(0, y);
+        for (let sx = 0; sx <= w; sx += 48) {
+          x.lineTo(sx, y + Math.sin(sx / 150 + i) * 2.2);
+        }
+        x.stroke();
+      }
+
+      // A handful of heavier rays — without these the grain reads as noise
+      // rather than as a cut through a log.
+      for (let i = 0; i < 7; i++) {
+        const y = rnd() * h;
+        x.strokeStyle = `rgba(44,29,14,${0.1 + rnd() * 0.09})`;
+        x.lineWidth = 3 + rnd() * 7;
+        x.beginPath();
+        x.moveTo(0, y);
+        for (let sx = 0; sx <= w; sx += 48) {
+          x.lineTo(sx, y + Math.sin(sx / 260 + i * 2) * 6);
+        }
+        x.stroke();
+      }
+    },
+    1024,
+    256,
     maxAnisotropy,
   );
 }

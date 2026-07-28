@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ContinueCard, SealedPick, Section } from "@/components/home/Spotlight";
+import { LitShelf } from "@/components/library/LitShelf";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { shelfState } from "@/lib/games";
 import { getLibrary, libraryIsPopulated } from "@/lib/library";
@@ -62,17 +63,23 @@ export default async function Home() {
 
         {resume.length > 0 && (
           <Section title="continue where you left off">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
+            <LitShelf
+              count={resume.length}
+              className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3"
+            >
               {resume.map((g, i) => (
                 <div
                   key={g.id}
-                  className="shelf-plank rise pb-3"
-                  style={{ animationDelay: `${i * 60}ms` }}
+                  data-lit
+                  className="rise pb-3"
+                  // Capped like the library grid — an uncapped stagger holds
+                  // the last cell invisible for as long as the row is long.
+                  style={{ animationDelay: `${Math.min(i, 11) * 45}ms` }}
                 >
                   <ContinueCard game={g} />
                 </div>
               ))}
-            </div>
+            </LitShelf>
           </Section>
         )}
 

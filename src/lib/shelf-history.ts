@@ -28,3 +28,26 @@ export function takeShelfScroll() {
   shelfScrollY = null;
   return y;
 }
+
+/**
+ * Which view (cases / 3D shelf) was showing when a case was picked off it.
+ *
+ * Same lifetime as the scroll position above and for the same reason: a push
+ * to `/game/[id]` and back remounts `LibraryBrowser` from scratch, so without
+ * this the view resets to its default every time — which reads as the 3D
+ * shelf randomly "kicking you back" to the flat grid rather than as the
+ * ordinary behaviour of a fresh component instance.
+ *
+ * Read once and kept, not taken — unlike scroll position, which is only
+ * meaningful for the one return trip, the chosen view is a standing
+ * preference for the session.
+ */
+let shelfView: string | null = null;
+
+export function rememberShelfView(view: string) {
+  shelfView = view;
+}
+
+export function lastShelfView(): string | null {
+  return shelfView;
+}

@@ -10,15 +10,25 @@ export function ContinueCard({ game }: { game: Game }) {
   const ago = agoLabel(daysSincePlayed(game));
 
   return (
-    <Link href={`/game/${game.id}`} className="group/item block">
-      <ViewTransition name={`case-${game.id}`} share="morph">
-        <CaseCover title={game.title} coverPath={game.coverPath} />
-      </ViewTransition>
-      <div className="mt-3.5">
-        <p className="truncate font-display text-[15px] leading-tight text-paper-dim transition-colors group-hover/item:text-paper">
-          {game.title}
-        </p>
-        <p className="catalog mt-1.5 text-paper-ghost">
+    <Link
+      href={`/game/${game.id}`}
+      className="group/item block"
+      aria-label={game.title}
+    >
+      {/* Plank wraps the case alone — the caption goes below the timber. */}
+      <div className="shelf-plank">
+        <ViewTransition name={`case-${game.id}`} share="morph">
+          <CaseCover
+            title={game.title}
+            coverPath={game.coverPath}
+            platform={game.platform}
+          />
+        </ViewTransition>
+      </div>
+      {/* Title is on the artwork and platform is on the band — the label says
+          only what the object cannot. */}
+      <div className="mt-3">
+        <p className="catalog text-paper-ghost">
           {game.playtime} hrs · {ago}
         </p>
       </div>
@@ -40,7 +50,12 @@ export function SealedPick({ game }: { game: Game }) {
       className="group/pick grid grid-cols-[minmax(0,9rem)_1fr] items-center gap-8 sm:grid-cols-[minmax(0,13rem)_1fr] sm:gap-12"
     >
       <ViewTransition name={`case-${game.id}`} share="morph">
-        <CaseCover title={game.title} coverPath={game.coverPath} sealed />
+        <CaseCover
+          title={game.title}
+          coverPath={game.coverPath}
+          platform={game.platform}
+          sealed
+        />
       </ViewTransition>
 
       <div className="min-w-0">

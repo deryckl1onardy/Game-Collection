@@ -4,6 +4,8 @@ import { Canvas } from "@react-three/fiber";
 import { ContactShadows, PresentationControls } from "@react-three/drei";
 
 import { GameCase, type GameCaseProps } from "./GameCase";
+import { CASE_BASE, Shelf } from "./Shelf";
+import { StageLighting } from "./StageLighting";
 import { StudioEnvironment } from "./StudioEnvironment";
 
 /**
@@ -15,8 +17,14 @@ import { StudioEnvironment } from "./StudioEnvironment";
 export function CaseStage({
   onReady,
   background,
+  surface,
   ...props
-}: GameCaseProps & { onReady?: () => void; background: string }) {
+}: GameCaseProps & {
+  onReady?: () => void;
+  background: string;
+  /** Timber tone for the shelf, from `--plank-1`. */
+  surface: string;
+}) {
   return (
     <Canvas
       shadows
@@ -38,17 +46,9 @@ export function CaseStage({
       {/* Locally generated + PMREM-processed, so clearcoat is reliable and
           nothing is fetched from an external origin at runtime. */}
       <StudioEnvironment />
+      <StageLighting />
 
-      <directionalLight
-        position={[3.2, 5, 4.4]}
-        intensity={2.2}
-        color="#fff4e6"
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0006}
-      />
-      <directionalLight position={[-4.5, 1, -2.2]} intensity={0.7} color="#9dc4ff" />
-      <ambientLight intensity={0.35} color="#8e8d86" />
+      <Shelf color={surface} />
 
       <PresentationControls
         global
@@ -61,13 +61,22 @@ export function CaseStage({
         <GameCase {...props} />
       </PresentationControls>
 
+      {/*
+        Contact darkening at the joint, not a general blob.
+
+        This used to sit at y -1.62 — 0.31 below the case's own base, on a plane
+        with nothing on it — so it read as a smudge floating under a floating
+        object. Pulled up to the shelf surface and tightened (scale 12 → 7,
+        far 4 → 2.4) so it darkens where the two actually meet and lets the key
+        light's cast shadow do the directional work.
+      */}
       <ContactShadows
-        position={[0, -1.62, 0]}
-        opacity={0.5}
-        scale={12}
-        blur={2.6}
-        far={4}
-        color="#000000"
+        position={[0, CASE_BASE - 0.008, 0]}
+        opacity={0.62}
+        scale={7}
+        blur={2.1}
+        far={2.4}
+        color="#0b0805"
       />
     </Canvas>
   );
