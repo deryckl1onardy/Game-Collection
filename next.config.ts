@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
    * Only affects local development; production uses Neon (ADR-0004).
    */
   serverExternalPackages: ["@electric-sql/pglite"],
+  experimental: {
+    // Powers the cover -> case shared-element morph (PROJECT_BRIEF.md
+    // "Transition") and the filtered-grid crossfade, both via React's
+    // <ViewTransition>. See node_modules/next/dist/docs/.../view-transitions.md.
+    viewTransition: true,
+  },
 };
 
 export default nextConfig;

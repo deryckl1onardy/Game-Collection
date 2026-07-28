@@ -1,3 +1,5 @@
+import { ViewTransition } from "react";
+
 import { Cover } from "./Cover";
 
 /**
@@ -17,20 +19,27 @@ import { Cover } from "./Cover";
  * Everything is static CSS; only the hover transform costs anything.
  */
 export function CaseCover({
+  id,
   title,
   coverPath,
   sealed = false,
   className = "",
 }: {
+  /**
+   * Names the shared-element transition (`cover-${id}`) so this cover morphs
+   * into the 3D case's placeholder on navigation, and repositions smoothly
+   * when the grid re-filters. Caller's <Link> must carry `group/case`.
+   */
+  id: string;
   title: string;
   coverPath?: string | null;
   sealed?: boolean;
   className?: string;
 }) {
   return (
-    <div className={`group/case [perspective:1400px] ${className}`}>
+    <div className={`[perspective:1400px] ${className}`}>
       <div
-        className="relative aspect-[2/3] rounded-[3px] transition-transform duration-300 ease-out will-change-transform [transform-style:preserve-3d] group-hover/case:[transform:rotateY(-7deg)_translateY(-5px)]"
+        className="relative aspect-[2/3] rounded-[3px] transition-transform duration-300 ease-out will-change-transform [transform-style:preserve-3d] motion-reduce:transition-none group-hover/case:[transform:rotateY(-7deg)_translateY(-5px)] group-focus-visible/case:[transform:rotateY(-7deg)_translateY(-5px)]"
         style={{
           // Dark moulded plastic showing at the edges of the shell.
           background: "#0b0c0e",
@@ -42,9 +51,11 @@ export function CaseCover({
         }}
       >
         {/* cover art, inset so the plastic rim reads around it */}
-        <div className="absolute inset-[3px] left-[7px] overflow-hidden rounded-[1px]">
-          <Cover title={title} coverPath={coverPath} />
-        </div>
+        <ViewTransition name={`cover-${id}`} share="morph">
+          <div className="absolute inset-[3px] left-[7px] overflow-hidden rounded-[1px]">
+            <Cover title={title} coverPath={coverPath} />
+          </div>
+        </ViewTransition>
 
         {/* the spine folding away on the left */}
         <div
@@ -74,7 +85,7 @@ export function CaseCover({
 
       {/* contact shadow — grounds the case instead of letting it float */}
       <div
-        className="mx-auto h-3 w-[86%] rounded-[50%] opacity-70 blur-[6px] transition-all duration-300 group-hover/case:w-[78%] group-hover/case:opacity-50"
+        className="mx-auto h-3 w-[86%] rounded-[50%] opacity-70 blur-[6px] transition-all duration-300 motion-reduce:transition-none group-hover/case:w-[78%] group-hover/case:opacity-50 group-focus-visible/case:w-[78%] group-focus-visible/case:opacity-50"
         style={{ background: "rgba(0,0,0,0.85)", marginTop: "-6px" }}
       />
     </div>

@@ -76,17 +76,21 @@ Next.js (App Router) + React Three Fiber + drei, deployed on Vercel.
 
 R3F over raw Three.js because UI state and 3D state are tightly coupled here
 (open/closed, current game, wrap torn). drei supplies `Environment`,
-`ContactShadows`, `PresentationControls` (damped drag-to-rotate), `useTexture`.
+`ContactShadows`, `OrbitControls` (orbit/pan/zoom), `useTexture`.
 
 ### Two rendering modes — do not render 100 cases
 
 - `/library` — 2D grid of cover images only. `next/image`, lazy loaded,
-  virtualized past a few hundred. No WebGL. Stays fast.
+  virtualized past a few hundred. No WebGL. Stays fast. Roving-tabindex
+  arrow-key navigation across the grid.
 - `/game/[id]` — mounts Canvas, one case, full quality.
 
-Transition: animate the 2D cover to the position/scale the 3D case will occupy,
-then crossfade to the canvas once textures resolve. The cover appears to *become*
-the object.
+Transition: React's `<ViewTransition>` (Next's `experimental.viewTransition`)
+morphs the 2D cover to the position/scale the 3D case will occupy, then
+crossfades to the canvas once it has painted a real frame. The cover appears to
+*become* the object. The same named transition also drives the grid's own
+filter/search re-layout, so a re-filtered set of covers repositions instead of
+just snapping.
 
 ### Data pipeline
 

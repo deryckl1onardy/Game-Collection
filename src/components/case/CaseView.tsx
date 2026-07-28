@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import * as THREE from "three";
 
+import { CaseCover } from "@/components/library/CaseCover";
 import { type Game, shelfState } from "@/lib/games";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 
@@ -69,6 +70,7 @@ function useCoverTexture(coverPath?: string | null) {
 export function CaseView({ game }: { game: Game }) {
   const [open, setOpen] = useState(false);
   const [resetToken, setResetToken] = useState(0);
+  const [stageReady, setStageReady] = useState(false);
   const cover = useCoverTexture(game.coverPath);
   const reducedMotion = usePrefersReducedMotion();
 
@@ -90,7 +92,25 @@ export function CaseView({ game }: { game: Game }) {
           coverTexture={cover}
           reducedMotion={reducedMotion}
           resetToken={resetToken}
+          onReady={() => setStageReady(true)}
         />
+      </div>
+
+      {/*
+       * The shared-element morph target: same `cover-${game.id}` name as the
+       * grid's CaseCover, so the flat cover appears to fly from its grid cell
+       * to roughly where the 3D case will sit. Fades out once the canvas has
+       * painted a real frame (gotcha 7 — the canvas reports ready before it
+       * has actually drawn anything, so this waits for CaseStage's onReady
+       * rather than the canvas merely mounting).
+       */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute left-1/2 top-1/2 w-[clamp(220px,26vw,360px)] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-500 motion-reduce:transition-none ${
+          stageReady ? "opacity-0" : "opacity-100"
+        }`}
+      >
+        <CaseCover id={game.id} title={game.title} coverPath={game.coverPath} sealed={sealed} />
       </div>
 
       <div className="pointer-events-none absolute left-6 top-6 max-w-[320px]">

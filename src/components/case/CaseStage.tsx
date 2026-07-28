@@ -1,6 +1,7 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
 
 import { CaseControls } from "./CaseControls";
@@ -12,7 +13,21 @@ export type CaseStageProps = GameCaseProps & {
   reducedMotion?: boolean;
   /** Bump to snap the camera back to its default framing. */
   resetToken?: number;
+  /** Fires once the canvas has painted a real frame (see gotcha 7). */
+  onReady?: () => void;
 };
+
+/** Fires `onReady` once, on the first rendered frame — mounting the canvas
+ * isn't enough (gotcha 7: it reports ready before it has actually painted). */
+function FirstFrameNotifier({ onReady }: { onReady?: () => void }) {
+  const fired = useRef(false);
+  useFrame(() => {
+    if (fired.current) return;
+    fired.current = true;
+    onReady?.();
+  });
+  return null;
+}
 
 /**
  * The WebGL surface for a single case.
@@ -20,7 +35,12 @@ export type CaseStageProps = GameCaseProps & {
  * Only ever mounted on a game detail view — the library grid renders flat cover
  * images and no Canvas at all, so browsing 100+ games stays fast.
  */
-export function CaseStage({ reducedMotion = false, resetToken = 0, ...props }: CaseStageProps) {
+export function CaseStage({
+  reducedMotion = false,
+  resetToken = 0,
+  onReady,
+  ...props
+}: CaseStageProps) {
   return (
     <Canvas
       shadows
@@ -51,6 +71,8 @@ export function CaseStage({ reducedMotion = false, resetToken = 0, ...props }: C
       <GameCase {...props} reducedMotion={reducedMotion} />
 
       <CaseControls reducedMotion={reducedMotion} resetToken={resetToken} />
+
+      <FirstFrameNotifier onReady={onReady} />
 
       <ContactShadows
         position={[0, -1.62, 0]}

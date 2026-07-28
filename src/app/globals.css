@@ -24,3 +24,27 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Cover -> case shared-element morph (see PROJECT_BRIEF.md "Case view"). The
+   blur hides pixel-interpolation artifacts mid-flight, matching the guidance
+   in node_modules/next/dist/docs/.../view-transitions.md. */
+::view-transition-group(.morph) {
+  animation-duration: 420ms;
+}
+::view-transition-image-pair(.morph) {
+  animation-name: cover-morph-blur;
+}
+@keyframes cover-morph-blur {
+  30% {
+    filter: blur(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
